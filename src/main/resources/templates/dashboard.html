@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- [1번 소유] 메인 페이지 틀. 2번, 3번은 이 파일을 수정하지 않고 자기 조각 파일만 수정합니다. -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <title>전력사용량 예측</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}"> <!-- 1번 -->
+  <link rel="stylesheet" th:href="@{/css/map.css}"> <!-- 2번 -->
+  <link rel="stylesheet" th:href="@{/css/dashboard.css}"> <!-- 3번 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside th:replace="~{layout/sidebar :: sidebar('dashboard')}"></aside> <!-- 1번 -->
+
+    <div class="main">
+      <header th:replace="~{layout/header :: header}"></header> <!-- 1번 -->
+
+      
+      <div class="content">
+        <div class="left">
+          <div th:replace="~{fragments/chips :: chips}"></div> <!-- 1번 -->
+
+          <div th:replace="~{fragments/kpi :: kpi}"></div> <!-- 3번 -->
+          <div class="row">
+            <div th:replace="~{fragments/donut :: donut}"></div> <!-- 2번 -->
+            
+            <th:block th:if="${sel.count == 0}">
+              <div th:replace="~{fragments/rank :: rank}">
+
+              </div>
+            </th:block> <!-- 1번 -->
+
+            <th:block th:if="${sel.count > 0}">
+              <div th:replace="~{fragments/forecast3 :: forecast3}">
+
+              </div>
+            </th:block> <!-- 3번 -->
+          </div>
+
+          <div th:replace="~{fragments/trend :: trend}"></div> <!-- 3번 -->
+
+        </div>
+
+        <div th:replace="~{fragments/map :: map}"></div> <!-- 2번 -->
+
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,14 @@
+:root{--ink:#2A3654;--mute:#66789A;--bg:#F5F9FE;--line:#E6EEF8;--a:#6F9BD6;--b:#F2A97E;--ref:#6FBF9F}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',sans-serif}
+.app{display:flex;min-height:100vh}
+.main{flex:1;min-width:0}
+.content{display:flex;gap:24px;padding:24px}
+.left{flex:1;display:flex;flex-direction:column;gap:16px;min-width:0}
+.row{display:flex;gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}
+.sidebar{width:80px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:12px}
+.sidebar-logo{width:40px;height:40px;border-radius:10px;background:#EAF2FC;color:#3F72B5;display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.sidebar a{width:64px;height:60px;border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--mute);text-decoration:none}
+.sidebar a.on{background:#EAF2FC;color:#2F5F9E;font-weight:700}
+.header{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;color:var(--mute)}
+.header b{display:block;font-size:16px;color:var(--ink)}
