@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- [4번 소유] 상세 데이터 페이지. 사이드바와 헤더는 1번이 만든 조각을 그대로 씁니다. -->
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>상세 데이터 - 전력사용량 예측</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">   <!-- 1번 (수정 금지) -->
+  <link rel="stylesheet" th:href="@{/css/detail.css}">   <!-- 4번 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside th:replace="~{layout/sidebar :: sidebar('detail')}"></aside>     <!-- 1번 -->
+  <div class="main">
+    <header th:replace="~{layout/header :: header}"></header>              <!-- 1번 -->
+    
+    <div class="content detail-content">
+
+      <div th:replace="~{fragments/detail_filter :: detail_filter}"></div>  <!-- 4번: 지역 드롭다운 -->
+      <div th:replace="~{fragments/detail_table :: detail_table}"></div>    <!-- 4번: 지역별 표 -->
+
+      <!-- (여유되면) 차트 3종은 fragments/detail_charts.html 을 만들어 여기에 추가 -->
+    </div>
+  </div>
+</div>
+</body>
+</html>

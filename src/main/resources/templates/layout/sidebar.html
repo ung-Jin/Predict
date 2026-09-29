@@ -1,0 +1,6 @@
+<!-- [1번 소유] 사이드바 -->
+<aside th:fragment="sidebar(menu)" class="sidebar">
+  <div class="sidebar-logo">⚡</div>
+  <a href="/dashboard" th:classappend="${menu == 'dashboard'} ? 'on' : ''">대시보드</a>
+  <a href="/detail" th:classappend="${menu == 'detail'} ? 'on' : ''">상세 데이터</a>
+</aside>
