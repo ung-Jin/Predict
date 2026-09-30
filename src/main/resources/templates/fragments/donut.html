@@ -1,4 +1,75 @@
-<!-- [2번 소유] 계약종별 도넛 -->
+<!-- ============================================================================
+     [2번 소유] fragments/donut.html
+     ============================================================================
+     역할: 대시보드 왼쪽 컬럼의 row 안, "시도별 증감률 순위(rank)" 카드 옆에
+           나란히 들어가는 "계약종별 도넛" 카드.
+     이 파일은 2번이 담당하는 조각입니다. 다른 팀원분들은 이 파일을 수정하지 마시고,
+     dashboard.html의 <div th:replace="~{fragments/donut :: donut}"></div> 위치만
+     필요 시 조정해 주시면 됩니다.
+
+     [2026-09-30 개편] 도넛 3개(비교지역A/B + 전국평균 고정) -> 2개로 축소:
+       1) 왼쪽 도넛  (#donut-left)  - 아직 비교 지역을 안 골랐으면 "전국 평균"을,
+                                      지역을 고르면 그 지역 데이터를 보여줌 (파란색 매칭)
+       2) 오른쪽 도넛(#donut-right) - 두 번째 지역을 고르기 전까진 숨겨져 있다가,
+                                      고르면 나타남 (분홍색 매칭)
+       3) #donutLegend               - 두 도넛 공용 범례 (이제 도넛 옆 오른쪽 칼럼)
+       지자체명은 더 이상 캔버스 위 별도 캡션 div가 아니라, donut.js가 Chart.js
+       플러그인으로 도넛 "정중앙"에 직접 그려 넣습니다 (그만큼 도넛을 크게 그릴 수 있음).
+
+     의존 라이브러리:
+       - Chart.js               : dashboard.html에서 이미 로드됨 (여기서 또 부르지 않음)
+       - chartjs-plugin-datalabels : 파이 조각 위에 % 숫자를 직접 표시하는 플러그인
+       - /js/donut.js           : 실제 도넛 그리는 함수 (renderContractDonut/clearDonut/
+                                  renderContractLegend/CONTRACT_COLOR_MAP)
+
+     ============================================================================
+     ⚠ 팀장님 리뷰용 안내 (병합 시 참고):
+       - dashboard.html에서 이 조각이 map 조각보다 위쪽에 그려지므로,
+         donut.js는 map-app.js보다 먼저 로드됩니다.
+         → map-app.js가 renderContractDonut / renderContractLegend / clearDonut를
+           호출할 수 있는 이유입니다. 순서 바꾸면 map-app.js에서 "함수 없음" 에러.
+       - 이 파일을 지우면 "왼쪽 컬럼에 도넛이 사라짐 + map-app.js 에러" 나므로,
+         지우려면 dashboard.html의 th:replace 라인과 map-app.js 안의 도넛 렌더 호출
+         (renderCompareLeftDonut / renderCompareRightDonut / renderNationalAverageDonut /
+          renderContractLegend 호출부)까지 같이 정리해야 합니다.
+       - 이 조각 자체는 sel 값을 안 쓰므로 sel이 비어있어도 렌더링됩니다.
+       - 아래 오른쪽 도넛 칼럼에 처음부터 class="is-empty"가 붙어있는 이유: 페이지가
+         막 로드된 시점엔 아직 두 번째 지역이 선택되지 않았으므로, map-app.js가
+         renderCompareRightDonut(null, ...)을 호출해서 이 클래스를 토글하기 전까지
+         잠깐이라도 빈 도넛이 보이지 않도록 미리 숨겨둔 것입니다.
+     ============================================================================ -->
 <div th:fragment="donut" class="card donut">
-  <p>계약종별 도넛 (2번 작업 영역)</p>
+
+  <!-- 헤더는 3분할 grid: [왼쪽 spacer] [중앙 제목] [오른쪽 기준월].
+       중앙 제목은 카드 정중앙에 자리잡고, 기준월은 카드 오른쪽 끝에 붙음. -->
+  <h3 class="donut-title">
+    <span class="donut-title-spacer"></span>
+    <span class="donut-title-text">계약종별 사용 비중</span>
+    <!-- 기준월(예: "2026년 7월 기준")은 map-app.js가 부트스트랩 시 이 span을 채움. -->
+    <span id="donutRefMonth" class="donut-ref-month"></span>
+  </h3>
+
+  <!-- 도넛 2개(왼쪽/오른쪽) + 범례를 한 줄에 가로로 배치.
+       지역명(또는 "전국 평균")은 각 도넛 캔버스 "정중앙"에 donut.js의 centerTextPlugin이
+       직접 그려 넣으므로, 여기엔 캡션 div가 따로 없음. -->
+  <div class="donut-compact-row">
+    <div class="donut-compact" id="donut-slot-left">
+      <div class="donut-canvas-wrap"><canvas id="donut-left"></canvas></div>
+    </div>
+    <div class="donut-compact is-empty" id="donut-slot-right">
+      <div class="donut-canvas-wrap"><canvas id="donut-right"></canvas></div>
+    </div>
+    <!-- 두 도넛 공통 범례. Chart.js 내장 범례를 끄고(donut.js: legend.display=false)
+         이 div에 map-app.js가 renderContractLegend()로 채워 넣음. -->
+    <div id="donutLegend" class="donut-legend"></div>
+  </div>
+
+  <!-- 파이(도넛) 조각 위에 % 숫자를 직접 표시하는 Chart.js 플러그인.
+       donut.js에서 Chart.register(ChartDataLabels)로 등록됨. -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+  <!-- 실제 도넛 렌더러. map-app.js에서 renderContractDonut / clearDonut /
+       renderContractLegend를 호출하므로, 이 파일이 map-app.js보다 먼저 로드돼야 함
+       (dashboard.html의 조각 배치 순서상 자동으로 이 조건 만족). -->
+  <script th:src="@{/js/donut.js}"></script>
 </div>

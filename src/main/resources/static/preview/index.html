@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>2번 담당 - 지도/비교 (임시 미리보기)</title>
+
+  <!-- amCharts 5: 지도 전용 (Chart.js는 지도를 못 그려서 이것만 별도로 씀) -->
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/geodata/southKoreaLow.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+  <!-- Chart.js: 팀 표준 차트 라이브러리 (도넛차트용) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <!-- 파이(도넛) 조각 위에 %숫자를 직접 표시해주는 플러그인 -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- 이 배너는 1번의 대시보드 뼈대에 편입되면 지우면 됨 -->
+  <div class="notice-banner">
+    ⚠ 임시 미리보기 페이지입니다. 실제 사이드바/헤더/대시보드 뼈대는 1번 작업물에 들어갑니다.
+    지금은 2번 담당(지도 · 지역 비교 · 계약종별 도넛)만 단독으로 확인하는 용도입니다.
+  </div>
+
+  <div class="layout">
+    <!-- 왼쪽 컬럼: 지도 + (지도 하단) 지역 비교 -->
+    <div>
+      <div class="panel">
+        <h3>전국 전력사용량 지도 (전년동월대비 증감률)</h3>
+        <div id="mapdiv"></div>
+        <div id="mapLegend"></div>
+        <p class="hint-text">지역 클릭: 오른쪽 슬롯에 추가(기존 오른쪽은 왼쪽으로 이동) · 지역을 아래 비교 카드로 드래그: 놓은 칸(왼쪽/오른쪽)에 바로 지정</p>
+      </div>
+
+      <div class="panel" style="margin-top: 16px;">
+        <h3>지역 비교</h3>
+        <!-- data-slot은 compare-rank.js가 렌더링하는 왼쪽/오른쪽 컬럼 전체에 직접 붙임
+             (별도 "여기로 드래그" 카드 없이, 표 자체의 왼쪽 컬럼 vs 오른쪽 컬럼이 곧 드롭 영역) -->
+        <div id="compareRankTable"></div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 컬럼: 계약종별 사용비중 (선택 지역 vs 전국 평균) -->
+    <div class="panel panel-donut">
+      <h3>계약종별 사용 비중</h3>
+      <div class="donut-compact-row">
+        <div class="donut-compact"><canvas id="donut-left"></canvas></div>
+        <div class="donut-compact"><canvas id="donut-right"></canvas></div>
+      </div>
+      <div id="donutLegend" class="donut-legend"></div>
+    </div>
+  </div>
+
+  <!-- 우리 모듈들 (로딩 순서 중요: 코드 매핑 -> 지도/도넛/순위표 -> 조립) -->
+  <script src="js/sido-map-codes.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/donut.js"></script>
+  <script src="js/compare-rank.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
