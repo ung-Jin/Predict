@@ -1,1 +1,339 @@
-/* [2번 소유] map-, donut- 클래스만 여기에 */
+/* ============================================================================
+   [2번 소유] /static/css/map.css
+   ============================================================================
+   이 파일은 fragments/map.html (지도 + 순위표) 과 fragments/donut.html (계약종별
+   도넛) 두 조각이 공유하는 스타일 시트입니다. 두 조각 모두 2번 담당이라 한 파일에
+   같이 둡니다.
+
+   여기에 들어있는 클래스 접두어 규칙 (다른 팀원분 파일과 이름 안 겹치게 하기 위함):
+     - map-*           : 지도 카드 안쪽 요소
+     - donut-*         : 도넛 카드 안쪽 요소
+     - compare-*       : 지도 하단 "전국 내 위치 표"의 grid/셀들
+     - rank-*          : 순위 배지 (compare-* 안에서만 씀)
+     - diverging-*     : 지도 색상 범례 (감소←→증가 그라데이션 바)
+     - region-drag-*   : 드래그 중 마우스 따라다니는 라벨 (body에 append 되므로 예외적으로 접두어 없음)
+
+   ⚠ 팀장님 리뷰용 안내 (병합 시 참고):
+     - 이 파일을 지우면 지도/도넛/순위표 스타일이 전부 깨집니다 (기능은 살아있지만
+       레이아웃이 무너져 보임).
+     - 안에 들어있는 셀렉터는 전부 2번 조각(fragments/map.html, fragments/donut.html)
+       안에서만 사용되므로, 다른 팀원분들 CSS와 충돌하지 않습니다.
+     - 다른 팀원분들 CSS 파일: common.css(1번), dashboard.css(3번), detail.css(4번).
+       각자 자기 접두어(kpi-, trend-, detail- 등)만 사용하면 서로 안 겹칩니다.
+   ============================================================================ */
+
+/* ---- 지도 카드 자체 ---- */
+.map-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+#mapdiv {
+  width: 100%;
+  height: 380px;
+}
+
+/* ---- 증감률 diverging 범례 (지도 아래) ---- */
+.diverging-legend {
+  margin-top: 8px;
+}
+
+.diverging-bar {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #0b3d91, #cfe8ff, #ffffff, #ffd6e8, #d6006d);
+}
+
+.diverging-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #555;
+  margin-top: 4px;
+}
+
+/* 지도에서 드래그하는 동안 마우스를 따라다니는 라벨 (body에 append 되므로 map- 접두어 X) */
+.region-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  background: #222;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---- 지역 비교표 ("전국 내 위치 표", 지도 하단) ----
+   왼쪽 컬럼 전체 vs 오른쪽 컬럼 전체가 곧 드롭 영역(data-slot).
+   헤더/각 행에 고정 높이(flex+min-height)를 줘서 세 컬럼이 세로줄 어긋나지 않게 함 */
+.map-compare-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: #333;
+  margin: 16px 0 6px 0;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 1fr;
+  gap: 0;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.compare-col,
+.compare-mid {
+  background: #fafafa;
+}
+
+.compare-col {
+  border: 2px dashed transparent;
+  padding: 0 4px;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+/* 지도에서 지역을 드래그해서 이 컬럼 위로 가져왔을 때 (드롭 가능 하이라이트) */
+.compare-col.drag-over {
+  border-color: #ffb703;
+  background: #fff8e6;
+}
+
+.compare-mid {
+  border-left: 1px solid #eee;
+  border-right: 1px solid #eee;
+}
+
+.compare-col-header,
+.compare-mid-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  font-size: 13px;
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-col-header.side-left {
+  color: #1d4ed8;
+}
+
+.compare-col-header.side-right {
+  color: #d6006d;
+}
+
+.compare-mid-header {
+  color: #999;
+  font-weight: normal;
+  font-size: 11px;
+}
+
+.compare-col-cell,
+.compare-mid-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 3px 2px;
+  border-top: 1px solid #eee;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.compare-mid-cell {
+  font-size: 10.5px;
+  color: #666;
+}
+
+.compare-col-cell.is-empty {
+  opacity: 0.5;
+}
+
+.rank-badge {
+  display: inline-block;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: #f0f0f0;
+}
+
+.compare-col[data-slot='left'] .rank-badge {
+  background: #e3ebff;
+  color: #1d4ed8;
+}
+
+.compare-col[data-slot='right'] .rank-badge {
+  background: #ffe3f0;
+  color: #d6006d;
+}
+
+.rank-badge-empty {
+  background: #eee;
+  color: #aaa;
+}
+
+.rank-value {
+  font-size: 10.5px;
+  color: #555;
+  margin-top: 2px;
+}
+
+.compare-drop-hint {
+  font-size: 11px;
+  color: #aaa;
+  text-align: center;
+  margin: 8px 0 0 0;
+}
+
+/* ---- 계약종별 도넛 카드 자체 (dashboard.html의 .row 안, kpi 카드 바로 아래) ----
+   [2026-09-30 개편] 원래 카드 폭 50%(kpi 카드 절반) + 도넛 3개(비교지역A/B + 전국평균
+   고정) 구성이었다가, "카드는 더 좁게, 도넛은 최대한 크게" 요청으로 아래처럼 바뀜:
+     - 카드 폭: 50% -> 30%로 축소.
+     - 도넛 개수: 3개 -> 2개로 축소. "전국 평균"은 별도 고정 도넛이 아니라, 왼쪽 도넛의
+       기본값으로 흡수함 (지역 미선택 시 전국평균, 선택하면 그 지역) - js/map-app.js 참고.
+     - 지자체명 캡션: 캔버스 위 별도 줄이 아니라 donut.js의 centerTextPlugin이 도넛
+       "정중앙"에 직접 그려 넣음 -> 캡션 줄이 사라진 만큼 도넛을 더 키울 수 있음.
+     - 범례: 도넛 아래 가로줄 -> 도넛 옆 오른쪽 세로 칼럼으로 이동 -> 역시 도넛이 쓸 수
+       있는 공간을 넓히기 위함.
+   flex 아이템 기본 특성상 min-width가 auto라서 안쪽 도넛이 커지면 카드도
+   같이 커지려고 하므로 min-width:0으로 그것도 막음. */
+.donut {
+  flex: 0 0 30%;
+  max-width: 30%;
+  min-width: 0;
+  box-sizing: border-box;
+  /* 안쪽 캔버스가 조금이라도 삐져나오면 카드 밖으로 새지 않게 잘라줌 (도넛이 카드 밖으로
+     보이던 문제 방지). 카드 자체 폭은 위 flex/max-width로 이미 고정돼 있음. */
+  overflow: hidden;
+  /* [2026-09-30] 옆 카드(rank/forecast3)가 더 높아도, 이 카드까지 억지로 그 높이만큼
+     늘어나지(stretch) 않게 함 -> 카드 높이가 "도넛 크기 + 제목"만큼만 자연스럽게 잡혀서
+     쓸데없이 높아지는 문제 방지. (.row가 기본적으로 자식 카드들의 높이를 stretch로
+     맞추는데, 이 카드만 예외로 뺌) */
+  align-self: flex-start;
+}
+
+/* 헤더는 3분할 grid로 잡아서, 카드 폭과 무관하게 제목은 카드 정중앙,
+   기준월은 카드 오른쪽 끝에 정렬되도록 함.
+   [왼쪽 spacer 1fr | 가운데 제목 auto | 오른쪽 기준월 1fr]  */
+.donut-title {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 6px 0;
+}
+
+.donut-title-spacer {
+  /* 왼쪽 1fr 자리 채우기용 빈 span (grid balance) */
+}
+
+.donut-title-text {
+  text-align: center;
+}
+
+/* 카드 헤더 오른쪽 끝에 "· 2026년 7월 기준" 형태로 붙는 작은 회색 텍스트. */
+.donut-ref-month {
+  font-size: 10.5px;
+  color: #888;
+  font-weight: normal;
+  justify-self: end;   /* grid 셀 안에서 오른쪽 끝 정렬 */
+  text-align: right;
+}
+
+/* 도넛 2개(왼쪽/오른쪽) + 범례를 한 줄에 가로로 배치.
+   오른쪽 도넛은 두 번째 지역을 선택하기 전까지 .is-empty로 숨겨져 있다가
+   (map-app.js가 토글) 선택하면 나타남.
+   [2026-09-30] justify-content:center로 바꿔서, 오른쪽 도넛이 숨겨져 도넛 한 개 +
+   범례만 남아도 그 둘이 카드 가운데로 모이게 함 (전엔 기본값(왼쪽 정렬)이라 도넛이
+   왼쪽에 붙고 범례와의 사이에 빈 공간이 뜨는 것처럼 보였음). */
+.donut-compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.donut-compact {
+  /* [2026-09-30 네 번째 수정] 요청: "1개만 떠 있어도(전국평균) 2개 떠 있을 때랑 도넛
+     크기가 똑같아야 한다". 정사각형 계산 버그(donut-canvas-wrap 문단 참고)를 먼저
+     고치고 나니, 이제 이 캡을 다시 걸어도 정상적으로(찌그러지지 않고) 동작함.
+     아래 식은 "범례(56px)와 간격(gap 6px 두 번=12px)을 뺀 나머지를 도넛 두 개가
+     정확히 반씩 나눠 가질 때의 폭"과 동일 - 즉 도넛이 1개 떠 있든 2개 떠 있든
+     도넛 한 칸의 크기 자체는 항상 이 값으로 고정됨. */
+  flex: 1 1 0;
+  max-width: calc((100% - 56px - 12px) / 2);
+  min-width: 0; /* flex 아이템 기본 min-width:auto가 안쪽 캔버스 크기 따라 커지는 것 방지 */
+  min-height: 0;
+  display: flex;
+  align-items: center;   /* 세로 공간이 도넛(정사각형)보다 남으면 위아래 가운데로 */
+  justify-content: center;
+}
+
+/* 아직 선택 안 된 오른쪽 도넛 슬롯은 레이아웃에서 아예 빼버림 (display:none)
+   -> 왼쪽 도넛(전국평균/첫 선택 지역)이 legend 앞까지 남는 폭을 전부 차지해서 커짐. */
+.donut-compact.is-empty {
+  display: none;
+}
+
+/* [2026-09-30 세 번째 수정] CSS만으로 "정사각형"을 만들려던 두 시도(aspect-ratio,
+   padding-bottom 트릭) 둘 다 결국 실패로 판명남. 브라우저 개발자도구로 실측해보니:
+   Chart.js가 컨테이너 크기를 잴 때 "padding으로 만들어낸 높이"를 진짜 높이로 안 쳐주고
+   반토막(폭의 절반)으로 오인식해서, 캔버스를 정사각형이 아니라 가로로 넓적하게
+   (예: 76x38) 그려버리는 버그가 있었음 - "도넛이 쭈그러들어 보인다"의 진짜 원인.
+   그래서 CSS 트릭을 완전히 버리고, 대신 donut.js에서 자바스크립트로 "지금 이 박스의
+   실제 폭을 재서 그 값을 그대로 height로 박아넣는" 가장 단순하고 확실한 방법으로 바꿈
+   (ResizeObserver로 폭이 바뀔 때마다 자동으로 다시 맞춰줌 - donut.js의
+   keepCanvasWrapSquare() 참고). 이러면 Chart.js 입장에서는 그냥 평범한 "실제 높이가
+   있는 박스"로 보이므로 더 이상 오작동하지 않음. */
+.donut-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  /* height는 여기서 고정하지 않음 - donut.js가 폭을 재서 JS로 직접 넣어줌 */
+}
+
+/* 계약종별 공통 범례. 예전엔 도넛 아래 가로 한 줄이었는데, 도넛 공간을 더 확보하기 위해
+   오른쪽 옆 칼럼으로 옮기고 세로로 나열함. 폭을 최소한으로 줄여서 그만큼 도넛 쪽에
+   더 넓은 폭을 몰아줌. */
+.donut-legend {
+  flex: 0 0 auto;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 9.5px;
+  color: #444;
+  line-height: 1.2;
+}
+
+.donut-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.donut-legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}

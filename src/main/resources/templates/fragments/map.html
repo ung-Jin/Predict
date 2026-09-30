@@ -1,4 +1,68 @@
-<!-- [2번 소유] 지도 + 색상 범례 + 전국 내 위치 표 -->
+<!-- ============================================================================
+     [2번 소유] fragments/map.html
+     ============================================================================
+     역할: 대시보드 오른쪽 컬럼에 들어가는 "지도 + 색상 범례 + 전국 내 위치 표" 카드.
+     이 파일은 2번이 담당하는 조각입니다. 다른 팀원분들은 이 파일을 수정하지 마시고,
+     이 조각을 어디서 어떻게 부를지(<div th:replace="~{fragments/map :: map}">)만
+     dashboard.html에서 지정해 주시면 됩니다.
+
+     안에 들어있는 것:
+       1) #mapdiv          - amCharts5로 그리는 시도별 색칠 지도
+       2) #mapLegend       - 지도 아래에 그리는 diverging 색상 범례(감소←→증가)
+       3) #compareRankTable - 지도 하단 "전국 내 위치" 순위 비교표
+                             (왼쪽 컬럼 vs 오른쪽 컬럼 자체가 드롭 영역, data-slot 사용)
+
+     의존 CDN/파일 (아래 <script> 태그 참고, 로딩 순서 중요):
+       - amCharts5 4종         : 지도 전용 라이브러리 (팀 표준 Chart.js는 지도 못 그림)
+       - /js/sido-map-codes.js : ISO 3166-2:KR 코드(KR-11 ~ KR-49)와 시도명 매핑표
+       - /js/map.js            : 지도 초기화 함수 initRegionMap()
+       - /js/compare-rank.js   : 순위 비교표 렌더 함수 renderCompareRankTable()
+       - /js/map-app.js        : 위 3개 + donut.js를 조립하는 부트스트랩 (반드시 마지막)
+
+     donut.js는 fragments/donut :: donut 에서 먼저 로드됩니다.
+     대시보드 조립 순서상 donut 조각이 map 조각보다 위쪽에 그려지므로,
+     map-app.js가 실행될 때는 donut.js가 이미 로드되어 있어 renderContractDonut/
+     renderContractLegend/clearDonut 함수를 문제없이 호출할 수 있습니다.
+
+     ============================================================================
+     ⚠ 팀장님 리뷰용 안내 (병합 시 참고):
+       - 이 파일을 통째로 지우면 "지도가 없는 대시보드"가 됩니다.
+       - 만약 지도가 필요없다는 결정이 나오면, dashboard.html에서 이 조각을
+         부르는 <div th:replace="~{fragments/map :: map}"></div> 줄만 지우시면
+         됩니다 (파일 자체는 남겨도 무해).
+       - 컨트롤러 쪽에서 model.addAttribute("sel", ...)를 세팅해줘야 dashboard.html
+         자체가 뜨는데, 이 조각 자체는 sel 값을 안 쓰므로 sel이 비어있어도 렌더링됩니다.
+     ============================================================================ -->
 <div th:fragment="map" class="card map">
-  <p>지도 + 색상 범례 + 전국 내 위치 표 (2번 작업 영역)</p>
+
+  <h3 class="map-title">전국 전력사용량 지도 (전년동월대비 증감률)</h3>
+
+  <!-- amCharts5가 이 div에 SVG로 지도를 그림. 높이는 map.css의 #mapdiv{height:380px}. -->
+  <div id="mapdiv"></div>
+
+  <!-- 지도 색상 범례 (감소←파랑↔분홍→증가). 순수 HTML로 그림 (amCharts 기본 HeatLegend는
+       단방향 그라데이션이라, diverging 스케일에는 안 맞아서 map.js에서 직접 innerHTML로 채움). -->
+  <div id="mapLegend"></div>
+
+  <!-- "전국 내 위치" 순위 비교표. 지도에서 지역을 클릭하거나, 이 표의 왼쪽/오른쪽 컬럼
+       위로 지역을 드래그해서 놓으면 그 자리에 채워짐 (표 내부에 data-slot 속성 있음). -->
+  <h4 class="map-compare-title">전국 내 위치 (지역 비교)</h4>
+  <div id="compareRankTable"></div>
+
+  <!-- ================= amCharts5 CDN (지도 전용) =================
+       Chart.js(dashboard.html에서 이미 로드됨)로는 지도를 못 그려서, 지도만 별도 라이브러리 사용.
+       4개 파일 다 필요합니다 (index=코어, map=지도 모듈, geodata=한국 시도 좌표, themes=애니메이션).
+       하나라도 빠지면 지도가 안 뜹니다. -->
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/geodata/southKoreaLow.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+  <!-- ================= 우리 모듈 =================
+       순서 중요! sido-map-codes -> map -> compare-rank -> map-app 순.
+       (뒤 파일이 앞 파일의 함수/상수를 사용) -->
+  <script th:src="@{/js/sido-map-codes.js}"></script>
+  <script th:src="@{/js/map.js}"></script>
+  <script th:src="@{/js/compare-rank.js}"></script>
+  <script th:src="@{/js/map-app.js}"></script>
 </div>
