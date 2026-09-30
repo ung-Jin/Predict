@@ -27,17 +27,14 @@
           <div class="row">
             <div th:replace="~{fragments/donut :: donut}"></div> <!-- 2번 -->
             
-            <th:block th:if="${sel.count == 0}">
-              <div th:replace="~{fragments/rank :: rank}">
+            <!-- 1번: 둘 다 그려두고, 무엇을 보여줄지는 js/dashboard.js가 정함 (forecast3Box는 처음에 숨김) -->
+            <div id="rankBox" style="display: contents;">
+              <div th:replace="~{fragments/rank :: rank}"></div>
+            </div>
 
-              </div>
-            </th:block> <!-- 1번 -->
-
-            <th:block th:if="${sel.count > 0}">
-              <div th:replace="~{fragments/forecast3 :: forecast3}">
-
-              </div>
-            </th:block> <!-- 3번 -->
+            <div id="forecast3Box" style="display: none;">
+              <div th:replace="~{fragments/forecast3 :: forecast3}"></div>
+            </div>
           </div>
 
           <div th:replace="~{fragments/trend :: trend}"></div> <!-- 3번 -->
@@ -49,6 +46,7 @@
       </div>
     </div>
   </div>
+  <script th:src="@{/js/dashboard.js}"></script> <!-- 1번 -->
 </body>
 
 </html>
