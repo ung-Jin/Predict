@@ -1,4 +1,25 @@
 <!-- [3번 소유] 요약 카드 4개 -->
-<div th:fragment="kpi" class="card kpi">
-  <p>요약 카드 4개 (3번 작업 영역)</p>
+<!-- 값은 임시 고정값. 추후 ForecastCard 필드로 교체 -->
+<div th:fragment="kpi" class="kpi">
+
+  <div class="card kpi-card"> <!-- recentUsageKwh -->
+    <p class="kpi-label">최근 실측 · 2026.7</p>
+    <p class="kpi-value">44,063<span class="kpi-unit">GWh</span></p>
+  </div>
+
+  <div class="card kpi-card"> <!-- predictedKwh -->
+    <p class="kpi-label">8월 예측 사용량</p>
+    <p class="kpi-value">51,229<span class="kpi-unit">GWh</span></p>
+  </div>
+
+  <div class="card kpi-card"> <!-- yoyPct -->
+    <p class="kpi-label">전년 동월 대비 · 8월 예측</p>
+    <p class="kpi-value kpi-accent">-1.7<span class="kpi-unit">%</span></p>
+  </div>
+
+  <div class="card kpi-card"> <!-- mape -->
+    <p class="kpi-label">검증 오차 (MAPE)</p>
+    <p class="kpi-value">4.2<span class="kpi-unit">%</span></p>
+  </div>
+
 </div>

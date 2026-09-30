@@ -1,4 +1,18 @@
 <!-- [3번 소유] 월별 사용량 추이 차트 -->
+<!-- 차트 로직은 static/js/trend.js, 영역/색은 static/css/trend.css -->
 <div th:fragment="trend" class="card trend">
-  <p>월별 사용량 추이 차트 (3번 작업 영역)</p>
+
+  <div class="trend-head">
+    <p class="trend-title">월별 사용량 추이</p>
+    <p class="trend-sub">단위: GWh</p>
+  </div>
+
+  <!-- 차트 영역. 높이는 trend.css 의 .trend-chart 가 고정한다 -->
+  <div class="trend-chart">
+    <canvas id="trendChart"></canvas>
+  </div>
+
+  <!-- Chart.js 는 페이지 head 에서 먼저 로드된다 -->
+  <script th:src="@{/js/trend.js}"></script>
+
 </div>

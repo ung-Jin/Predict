@@ -1,0 +1,16 @@
+/* [3번 소유] 월별 사용량 추이 차트 */
+
+/* 차트 시리즈 색. 명도/채도/색각이상 분리도/대비 검사를 통과한 조합이므로
+   바꿀 때는 파랑-주황처럼 색상환에서 먼 두 색으로 유지할 것 */
+:root{--trend-actual:#3F72B5;--trend-forecast:#C86A1E}
+
+/* 카드 헤더 */
+.trend-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.trend-title{margin:0;font-size:14px;font-weight:700}
+.trend-sub{margin:0;font-size:12px;color:var(--mute)}
+
+/* 차트 영역 확보.
+   Chart.js 는 캔버스를 부모 크기에 맞추므로 부모에 height 가 없으면
+   리사이즈마다 캔버스가 계속 늘어난다. 높이 고정 + position:relative 가 필수. */
+.trend-chart{position:relative;height:260px}
+.trend-chart canvas{display:block;width:100%;height:100%}
