@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>상세 데이터 - 전력사용량 예측</title>
   <link rel="stylesheet" th:href="@{/css/common.css}">   <!-- 1번 (수정 금지) -->
+  <link rel="stylesheet" th:href="@{/css/detail-charts.css}"> <!-- 1번 추가-->
   <link rel="stylesheet" th:href="@{/css/detail.css}">   <!-- 4번 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -17,11 +18,15 @@
     <div class="content detail-content">
 
       <div th:replace="~{fragments/detail_filter :: detail_filter}"></div>  <!-- 4번: 지역 드롭다운 -->
-      <div th:replace="~{fragments/detail_table :: detail_table}"></div>    <!-- 4번: 지역별 표 -->
-
-      <!-- (여유되면) 차트 3종은 fragments/detail_charts.html 을 만들어 여기에 추가 -->
+      <!-- 1번 추가: 표(왼쪽) + 차트(오른쪽) 가로 배치. 병합할 때 4번이 조정 -->
+      <div class="detail-body">
+        <div th:replace="~{fragments/detail_table :: detail_table}"></div>    <!-- 4번: 지역별 표 -->
+        <div th:replace="~{fragments/detail_charts :: detail_charts}"></div>  <!-- 1번 대신 작업: 우측 차트 3종 -->
+      </div>
     </div>
   </div>
 </div>
+
+<script th:src="@{/js/detail-charts.js}"></script>   <!-- 1번 추가 -->
 </body>
 </html>
