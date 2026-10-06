@@ -1,16 +1,45 @@
 /* [3번 소유] 월별 사용량 추이 차트 */
 
-/* 차트 시리즈 색. 명도/채도/색각이상 분리도/대비 검사를 통과한 조합이므로
-   바꿀 때는 파랑-주황처럼 색상환에서 먼 두 색으로 유지할 것 */
-:root{--trend-actual:#3F72B5;--trend-forecast:#C86A1E}
+/* 차트 선 색.
+   명도 / 채도 / 색각이상 분리도 / 대비 검사를 통과한 조합이므로,
+   바꿀 때는 파랑-주황처럼 색상환에서 먼 두 색으로 유지할 것. */
+:root {
+  --trend-actual: #3F72B5;     /* 실측 (실선) */
+  --trend-forecast: #C86A1E;   /* 예측 (점선) */
+}
 
-/* 카드 헤더 */
-.trend-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
-.trend-title{margin:0;font-size:14px;font-weight:700}
-.trend-sub{margin:0;font-size:12px;color:var(--mute)}
+/* 카드 머리말 : 제목은 왼쪽, 단위는 오른쪽 */
+.trend-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.trend-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.trend-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mute);
+}
 
 /* 차트 영역 확보.
-   Chart.js 는 캔버스를 부모 크기에 맞추므로 부모에 height 가 없으면
-   리사이즈마다 캔버스가 계속 늘어난다. 높이 고정 + position:relative 가 필수. */
-.trend-chart{position:relative;height:260px}
-.trend-chart canvas{display:block;width:100%;height:100%}
+   Chart.js 는 캔버스를 부모 크기에 맞춘다. 부모에 height 가 없으면
+   리사이즈할 때마다 캔버스가 계속 늘어나 페이지가 무한히 길어진다.
+   아래 height 고정 + position:relative + JS 의 maintainAspectRatio:false 가 한 세트다.
+   차트 높이를 바꾸려면 여기 height 만 고치면 된다. */
+.trend-chart {
+  position: relative;
+  height: 260px;
+}
+
+.trend-chart canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

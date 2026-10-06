@@ -12,7 +12,8 @@
     <canvas id="trendChart"></canvas>
   </div>
 
-  <!-- Chart.js 는 페이지 head 에서 먼저 로드된다 -->
+  <!-- script 는 반드시 이 fragment div "안쪽"에 둬야 최종 페이지에 실린다 (chips.html, donut.html 과 같은 관례)
+       chart.js 와 axios 는 dashboard.html head 에서 이미 불러온다 -->
   <script th:src="@{/js/trend.js}"></script>
 
 </div>

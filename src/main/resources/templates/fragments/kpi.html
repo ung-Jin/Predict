@@ -1,25 +1,29 @@
 <!-- [3번 소유] 요약 카드 4개 -->
-<!-- 값은 임시 고정값. 추후 ForecastCard 필드로 교체 -->
+<!-- 값은 static/js/kpi.js 가 /chart-api/card 에서 받아 채운다.
+     지도 선택이 바뀌면 줄이 1개(전국) <-> 2개(지역+비교군)로 늘고 준다. -->
 <div th:fragment="kpi" class="kpi">
 
-  <div class="card kpi-card"> <!-- recentUsageKwh -->
-    <p class="kpi-label">최근 실측 · 2026.7</p>
-    <p class="kpi-value">44,063<span class="kpi-unit">GWh</span></p>
+  <div class="card kpi-card" id="kpiRecent">
+    <p class="kpi-label">최근 실측</p>
+    <div class="kpi-rows"></div>
   </div>
 
-  <div class="card kpi-card"> <!-- predictedKwh -->
-    <p class="kpi-label">8월 예측 사용량</p>
-    <p class="kpi-value">51,229<span class="kpi-unit">GWh</span></p>
+  <div class="card kpi-card" id="kpiPredicted">
+    <p class="kpi-label">예측 사용량</p>
+    <div class="kpi-rows"></div>
   </div>
 
-  <div class="card kpi-card"> <!-- yoyPct -->
-    <p class="kpi-label">전년 동월 대비 · 8월 예측</p>
-    <p class="kpi-value kpi-accent">-1.7<span class="kpi-unit">%</span></p>
+  <div class="card kpi-card" id="kpiYoy">
+    <p class="kpi-label">전년 동월 대비</p>
+    <div class="kpi-rows"></div>
   </div>
 
-  <div class="card kpi-card"> <!-- mape -->
+  <div class="card kpi-card" id="kpiMape">
     <p class="kpi-label">검증 오차 (MAPE)</p>
-    <p class="kpi-value">4.2<span class="kpi-unit">%</span></p>
+    <div class="kpi-rows"></div>
   </div>
+
+  <!-- script 는 반드시 이 fragment div "안쪽"에 둬야 최종 페이지에 실린다 -->
+  <script th:src="@{/js/kpi.js}"></script>
 
 </div>

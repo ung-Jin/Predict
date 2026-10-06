@@ -10,6 +10,12 @@
  * 사용 라이브러리: amCharts 5 (지도 전용) - am5geodata_southKoreaLow 에
  *   17개 시도 좌표가 이미 들어있어서 별도 GeoJSON을 구할 필요가 없음.
  *
+ * [2026-09-30] 세종특별자치시 클릭 안 되는 문제 대응: 세종시는 2012년에 신설돼서,
+ *   이 저해상도(Low) 지도 데이터에서 폴리곤이 아예 없거나 다른 지역들 사이에 낀
+ *   너무 작은 조각이라 클릭이 거의 안 먹음. 그래서 폴리곤과 별개로, 세종시 좌표에
+ *   작은 원(마커)을 하나 얹어서 "항상 클릭 가능한 영역"을 따로 만들어줌
+ *   (아래 initRegionMap 안의 "세종특별자치시 보정" 부분 참고).
+ *
  * 색상 규칙(증감률 기준, 0%를 중심으로 양쪽으로 갈라지는 "diverging" 색상):
  *   - 감소(음수)  : 0%에 가까우면 하늘색 -> 감소폭이 클수록 진한 파란색
  *   - 증가(양수)  : 0%에 가까우면 연분홍색 -> 증가폭이 클수록 진한 분홍색
@@ -246,8 +252,62 @@ function initRegionMap(containerId, options) {
       // fill adapter도 다시 호출돼서 (위에서 갱신한) 새 스케일 기준으로 색이 다시 계산됨
       polygonSeries.data.setAll(dataForMap);
 
+      // 세종시는 폴리곤이 아니라 별도 마커(sejongPointSeries)로 표시하므로,
+      // 이번 달 값을 찾아서 마커 쪽에도 따로 반영해줌 (매달 색이 새 데이터로 바뀌게).
+      const sejongRow = regionDataForMonth.find((r) => r.sido === SEJONG_NAME);
+      sejongPointSeries.data.setAll([
+        {
+          geometry: { type: 'Point', coordinates: SEJONG_LONLAT },
+          value: sejongRow ? sejongRow[metricKey] : null,
+        },
+      ]);
+
       renderDivergingLegend('mapLegend', scaleMinDecrease, scaleMaxIncrease);
     }
+
+    // ---- 세종특별자치시 보정 (클릭 안 되는 문제 대응) ----
+    // 세종시(KR-36)는 지도 데이터(southKoreaLow)에 폴리곤이 없거나, 있어도 다른
+    // 지역 사이에 낀 아주 작은 조각이라 마우스로 정확히 찍기가 거의 불가능함.
+    // 그래서 폴리곤이랑 별개로, 세종시 좌표에 작은 원(마커)을 하나 그려서
+    // 그 원을 클릭하면 폴리곤을 클릭한 것과 똑같이 동작하게 만듦.
+    const SEJONG_NAME = '세종특별자치시';
+    const SEJONG_LONLAT = [127.2890, 36.4800]; // [경도, 위도] - 세종시청 부근
+
+    let sejongCircle = null; // setCompareSelection에서 테두리 갱신할 때 쓰려고 참조해둠
+
+    const sejongPointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+
+    sejongPointSeries.bullets.push((root) => {
+      const circle = am5.Circle.new(root, {
+        radius: 7,
+        strokeWidth: DEFAULT_STROKE_WIDTH,
+        stroke: DEFAULT_STROKE,
+        interactive: true,
+        cursorOverStyle: 'pointer',
+        tooltipText: "세종특별자치시: {value.formatNumber('+#,##0.0|#,##0.0')}%",
+        // [2026-09-30] 평소엔 안 보이게 투명하게 둠 - 지도 위에 이질적인 동그라미가
+        // 튀어 보인다는 피드백 반영. 눈에는 안 보여도 도형(원) 자체는 그대로 있어서
+        // 그 위치를 클릭하는 건 여전히 됨 - "안 보이는 클릭 영역"이 된 것뿐.
+        fillOpacity: 0,
+        strokeOpacity: 0,
+      });
+
+      // 폴리곤과 완전히 똑같은 diverging 색상 규칙을 그대로 재사용 (마우스 올렸을 때만 드러남)
+      circle.adapters.add('fill', (fill, target) => {
+        const ctx = target.dataItem && target.dataItem.dataContext;
+        return ctx ? divergingColor(ctx.value) : fill;
+      });
+      // 마우스를 올렸을 때만 살짝 보이게 해서 "여기 세종시 있다"는 힌트만 줌
+      circle.states.create('hover', { fillOpacity: 0.6, fill: am5.color(0xffb703) });
+
+      // 폴리곤 클릭과 똑같은 콜백을 그대로 호출 (지역명만 하드코딩해서 넘김)
+      circle.events.on('click', () => {
+        if (typeof onRegionClick === 'function') onRegionClick(SEJONG_NAME);
+      });
+
+      sejongCircle = circle;
+      return am5.Bullet.new(root, { sprite: circle });
+    });
 
     // 최초 렌더
     applyData(regionData, metric);
@@ -294,6 +354,19 @@ function initRegionMap(containerId, options) {
           strokeWidth: strokeWidth,
         });
       });
+
+      // 세종시는 폴리곤이 아니라 별도 마커(sejongCircle)라서 위 루프에 안 걸림 - 똑같은 규칙을 따로 적용.
+      // 평소엔 투명(strokeOpacity:0)해서 안 보이다가, 실제로 비교 지역으로 선택됐을 때만
+      // 테두리를 보이게(strokeOpacity:1) 해서 "선택됨" 표시가 나게 함.
+      if (sejongCircle) {
+        if (leftName === SEJONG_NAME) {
+          sejongCircle.setAll({ stroke: COMPARE_LEFT_STROKE, strokeWidth: COMPARE_STROKE_WIDTH, strokeOpacity: 1 });
+        } else if (rightName === SEJONG_NAME) {
+          sejongCircle.setAll({ stroke: COMPARE_RIGHT_STROKE, strokeWidth: COMPARE_STROKE_WIDTH, strokeOpacity: 1 });
+        } else {
+          sejongCircle.setAll({ stroke: DEFAULT_STROKE, strokeWidth: DEFAULT_STROKE_WIDTH, strokeOpacity: 0 });
+        }
+      }
     };
   });
 

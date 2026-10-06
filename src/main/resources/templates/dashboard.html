@@ -10,7 +10,11 @@
   <link rel="stylesheet" th:href="@{/css/dashboard.css}"> <!-- 3번 -->
   <link rel="stylesheet" th:href="@{/css/kpi.css}"> <!-- 3번 -->
   <link rel="stylesheet" th:href="@{/css/trend.css}"> <!-- 3번 -->
+  <link rel="stylesheet" th:href="@{/css/forecast3.css}"> <!-- 3번 -->
+  <link rel="stylesheet" th:href="@{/css/yoyrank.css}"> <!-- 3번 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script> <!-- 3번 -->
+  <script th:src="@{/js/kpi-common.js}"></script> <!-- 3번: kpi/forecast3/trend 가 공통으로 씀, 조각보다 먼저 로드돼야 함 -->
 </head>
 
 <body>
@@ -29,17 +33,15 @@
           <div class="row">
             <div th:replace="~{fragments/donut :: donut}"></div> <!-- 2번 -->
             
-            <th:block th:if="${sel.count == 0}">
-              <div th:replace="~{fragments/rank :: rank}">
+            <!-- 1번: 둘 다 그려두고, 무엇을 보여줄지는 js/dashboard.js가 정함 (forecast3Box는 처음에 숨김) -->
+            <div id="rankBox" style="display: contents;">
+              <!-- 3번: 선택 0개일 때 보여줄 시도별 증감률. 1번의 fragments/rank 는 손대지 않고 그대로 둠 -->
+              <div th:replace="~{fragments/yoyrank :: yoyrank}"></div>
+            </div>
 
-              </div>
-            </th:block> <!-- 1번 -->
-
-            <th:block th:if="${sel.count > 0}">
-              <div th:replace="~{fragments/forecast3 :: forecast3}">
-
-              </div>
-            </th:block> <!-- 3번 -->
+            <div id="forecast3Box" style="display: none;">
+              <div th:replace="~{fragments/forecast3 :: forecast3}"></div>
+            </div>
           </div>
 
           <div th:replace="~{fragments/trend :: trend}"></div> <!-- 3번 -->
@@ -51,6 +53,7 @@
       </div>
     </div>
   </div>
+  <script th:src="@{/js/dashboard.js}"></script> <!-- 1번 -->
 </body>
 
 </html>
