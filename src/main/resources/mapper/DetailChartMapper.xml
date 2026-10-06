@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- [1번 작성 - 4번 지원] 상세 데이터 우측 차트용 쿼리
+     resultType="map" : 별칭(AS 뒤 이름)이 곧 Map의 키 이름이 됨
+     / 1000000 : kWh를 GWh로 바꿈 -->
+<mapper namespace="com.green.Predict.detailchart.mapper.DetailChartMapper">
+
+    <!-- ===== 연도별 월평균 (막대 차트) ===== -->
+
+    <!-- 선택한 지역 하나 -->
+    <select id="findYearlyAvg" resultType="map">
+        SELECT m.year AS year,
+               ROUND(AVG(m.usage_kwh) / 1000000, 1) AS avgGwh
+        FROM monthly_data m
+        JOIN region r ON m.region_id = r.region_id
+        WHERE r.region_name = #{name}
+        GROUP BY m.year
+        ORDER BY m.year
+    </select>
+
+    <!-- 전국 합계: 월별로 시도를 먼저 더하고(서브쿼리 t), 그 월합계를 연도별로 평균 -->
+    <select id="findNationalYearlyAvg" resultType="map">
+        SELECT t.year AS year,
+               ROUND(AVG(t.total) / 1000000, 1) AS avgGwh
+        FROM (SELECT year, month, SUM(usage_kwh) AS total
+              FROM monthly_data
+              GROUP BY year, month) t
+        GROUP BY t.year
+        ORDER BY t.year
+    </select>
+
+    <!-- 시도 평균: 모든 시도 행을 연도별로 평균 -->
+    <select id="findAllRegionYearlyAvg" resultType="map">
+        SELECT year AS year,
+               ROUND(AVG(usage_kwh) / 1000000, 1) AS avgGwh
+        FROM monthly_data
+        GROUP BY year
+        ORDER BY year
+    </select>
+
+    <!-- ===== 월별 사용량 (계절 패턴, 히트맵) ===== -->
+
+    <!-- 선택한 지역 하나 -->
+    <select id="findMonthly" resultType="map">
+        SELECT m.year AS year,
+               m.month AS month,
+               ROUND(m.usage_kwh / 1000000, 1) AS usageGwh
+        FROM monthly_data m
+        JOIN region r ON m.region_id = r.region_id
+        WHERE r.region_name = #{name}
+        ORDER BY m.year, m.month
+    </select>
+
+    <!-- 전국 합계: 월마다 17개 시도를 더함 -->
+    <select id="findNationalMonthly" resultType="map">
+        SELECT year AS year,
+               month AS month,
+               ROUND(SUM(usage_kwh) / 1000000, 1) AS usageGwh
+        FROM monthly_data
+        GROUP BY year, month
+        ORDER BY year, month
+    </select>
+
+    <!-- 시도 평균: 월마다 17개 시도를 평균 -->
+    <select id="findAllRegionMonthly" resultType="map">
+        SELECT year AS year,
+               month AS month,
+               ROUND(AVG(usage_kwh) / 1000000, 1) AS usageGwh
+        FROM monthly_data
+        GROUP BY year, month
+        ORDER BY year, month
+    </select>
+
+</mapper>

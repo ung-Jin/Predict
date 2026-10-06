@@ -3,46 +3,44 @@
 
   - 선택 지역은 sessionStorage(selectedRegionA/B)에서 읽음 -> static/js/detail-charts.js 참고
 -->
-  
+
 <div th:fragment="detail_charts" class="detail-charts">
 
-  <!-- 1) 연도별 월평균 사용량 (막대, A/B 비교, 아래에 전년 대비 %) -->
-  <div class="card detail-chart-card detail-chart-main">
-    <div class="detail-chart-head">
-      <div class="detail-chart-title">연도별 월평균 사용량
-        <span class="detail-chart-sub">GWh · 아래 숫자는 전년 대비</span>
-      </div>
-      <div class="detail-chart-legend" id="detailLegendBar"></div>
+  <!-- 1) 연도별 월평균 사용량 (막대) -->
+  <div class="card detail-chart-card">
+    <div class="detail-chart-title">연도별 월평균 사용량
+      <span class="detail-chart-sub">GWh · 마지막 연도는 일부 달만 평균</span>
     </div>
     <div class="detail-chart-body"><canvas id="detailBarChart"></canvas></div>
   </div>
 
-    <!-- 2) 계절 패턴 (선, 월 사용량 ÷ 연평균 × 100, 2022~2025) -->
-    <div class="card detail-chart-card">
-      <div class="detail-chart-head">
-        <div class="detail-chart-title">계절 패턴
-          <span class="detail-chart-sub">월 사용량 ÷ 연평균 × 100 · 2022~2025</span>
-        </div>
-        <div class="detail-chart-legend" id="detailLegendSeason"></div>
-      </div>
-      <div class="detail-chart-body"><canvas id="detailSeasonChart"></canvas></div>
+  <!-- 2) 계절 패턴 (선) -->
+  <div class="card detail-chart-card">
+    <div class="detail-chart-title">계절 패턴
+      <span class="detail-chart-sub">월 사용량 ÷ 연평균 × 100</span>
     </div>
+    <div class="detail-chart-body"><canvas id="detailSeasonChart"></canvas></div>
+  </div>
 
-    <!-- 3) 기간별 사용량 (히트맵: 가로 1~12월, 세로 연도). 담당 미정(4번 2개 / 3번 1개 중) -->
-    <div class="card detail-chart-card detail-chart-heat">
-      <div class="detail-chart-head">
-        <div class="detail-chart-title">기간별 사용량
-          <span class="detail-chart-sub">월별 · 진할수록 사용량이 많음</span>
-        </div>
-      </div>
-      <!-- 시안: 이 카드 한 장 안에 A 지역 히트맵, B 지역 히트맵이 가로로 나란히 들어감 -->
-      <!-- Chart.js에는 히트맵이 기본으로 없어서, 표(table)나 div 격자로 직접 그릴 예정 -->
-      <div class="detail-chart-body" id="detailHeatmap"></div>
+  <!-- 3) 기간별 사용량 (히트맵). 산점도의 점을 네모로 그려서 만듦. 이름과 아래 문구는 JS가 채움 -->
+  <div class="card detail-chart-card detail-chart-heat">
+    <div class="detail-chart-title">기간별 사용량
+      <span class="detail-chart-sub">GWh · 진할수록 사용량이 많음</span>
     </div>
-
-  <!-- 선택된 지역이 없을 때 보여줄 안내 (JS가 hidden 토글) -->
-  <p class="detail-chart-empty" id="detailChartEmpty" hidden>
-    왼쪽 표에서 지역을 선택하면 차트가 표시됩니다.
-  </p>
+    <div class="detail-chart-body">
+      <!-- 1번 줄 -->
+      <div class="detail-heat-block" id="detailHeatBlock1">
+        <div class="detail-heat-name"><span class="detail-heat-dot" id="detailHeatDot1"></span><span id="detailHeatName1"></span></div>
+        <div class="detail-heat-box"><canvas id="detailHeatChart1"></canvas></div>
+        <div class="detail-heat-foot" id="detailHeatFoot1"></div>
+      </div>
+      <!-- 2번 줄 (선택 0개일 때는 JS가 숨김) -->
+      <div class="detail-heat-block" id="detailHeatBlock2">
+        <div class="detail-heat-name"><span class="detail-heat-dot" id="detailHeatDot2"></span><span id="detailHeatName2"></span></div>
+        <div class="detail-heat-box"><canvas id="detailHeatChart2"></canvas></div>
+        <div class="detail-heat-foot" id="detailHeatFoot2"></div>
+      </div>
+    </div>
+  </div>
 
 </div>
