@@ -1,2 +1,5 @@
 /* [4번 소유] detail- 클래스만 여기에 */
 .detail-content{flex-direction:column}
+
+/* 1번 추가: 표(왼쪽) + 차트(오른쪽) 가로 배치. 병합할 때 4번이 조정 */
+.detail-body{display:flex;gap:16px;align-items:stretch;min-width:0}
