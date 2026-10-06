@@ -119,16 +119,10 @@ const centerTextPlugin = {
   },
 };
 
-// [2026-09-30] canvas-wrap을 "폭과 똑같은 높이(정사각형)"로 만드는 함수.
-// CSS만으로(aspect-ratio, padding-bottom 트릭) 두 번 시도했었는데 둘 다 Chart.js의
-// 컨테이너 크기 측정 로직과 충돌해서 도넛이 가로로 찌그러지는 버그가 있었음
-// (브라우저로 직접 재서 확인함 - 폭 76px인데 Chart.js가 높이를 38px로 잘못 인식).
-// 그래서 CSS 트릭을 버리고, 지금 이 박스의 실제 폭을 재서 그 값을 그대로 높이로
-// 박아넣는 가장 단순한 방법으로 바꿈. Chart.js 입장에선 그냥 "진짜 높이가 있는
-// 평범한 박스"로 보이니 더 이상 오작동하지 않음.
-// ResizeObserver를 하나만 붙여두면 카드 크기가 바뀔 때(도넛 개수 변화, 창 크기 변화)
-// 마다 자동으로 폭=높이를 다시 맞춰줌 - 같은 엘리먼트에 중복으로 붙이지 않도록
-// WeakSet으로 기억해둠.
+// [2026-09-30] canvas-wrap을 "폭과 같은 높이(정사각형)"로 만드는 함수. CSS 트릭
+// (aspect-ratio, padding-bottom)은 Chart.js가 높이를 반토막으로 오인식해서 도넛이
+// 쭈그러드는 버그가 있어 폐기, JS로 폭을 재서 height에 직접 박아넣는 방식.
+// ResizeObserver로 폭 변화 추적 (중복 등록 방지 WeakSet).
 const _squareWrapObserved = new WeakSet();
 function keepCanvasWrapSquare(wrapEl) {
   if (!wrapEl) return;

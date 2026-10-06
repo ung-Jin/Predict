@@ -11,8 +11,8 @@
      - chip-*          : 선택 지역 칩(원래 1번 담당, 지도랑 바로 이어져서 2번이 같이 작업)
      - compare-*       : 지도 하단 "전국 내 위치 표"의 grid/셀들
      - rank-*          : 순위 배지 (compare-* 안에서만 씀)
+     - strip-*         : 전국 증감률 분포 스트립 차트 (national-strip.js)
      - diverging-*     : 지도 색상 범례 (감소←→증가 그라데이션 바)
-     - region-drag-*   : 드래그 중 마우스 따라다니는 라벨 (body에 append 되므로 예외적으로 접두어 없음)
 
    ⚠ 팀장님 리뷰용 안내 (병합 시 참고):
      - 이 파일을 지우면 지도/도넛/순위표 스타일이 전부 깨집니다 (기능은 살아있지만
@@ -24,35 +24,43 @@
    ============================================================================ */
 
 /* ---- 선택 지역 칩 (fragments/chips.html) ----
-   한 줄짜리 얇은 카드 안에 인풋 2개를 나란히. 인풋 자체 높이는 흔한 폼 인풋 높이(36px)로
-   맞춰서 다른 카드들과 톤을 맞춤. readonly라서 값 입력 커서 대신 기본 화살표 커서로 보이게 함. */
+   한 줄짜리 얇은 카드 안에 select 2개를 나란히. 높이는 흔한 폼 인풋(36px)에 맞춤. */
 .chips {
   padding: 10px 16px;
 }
 
 .chip-row {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
+.chip-label {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* select는 기본 글꼴이 브라우저 글꼴이라 font-family를 명시적으로 상속시켜야
+   나머지 카드들과 글꼴이 같아 보임. 펼침 화살표는 브라우저 기본 모양 그대로 사용. */
 .chip-input {
   flex: 1;
   height: 36px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
+  font-family: inherit;
   font-size: 13px;
   color: var(--ink);
   background: #fff;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
-.chip-input:read-only {
-  background: var(--bg);
-  cursor: default;
-}
-
-.chip-input::placeholder {
+/* 아직 지역을 안 고른 상태 - 예전 placeholder처럼 흐린 글씨로 (chip.js가 토글) */
+.chip-input.is-empty {
   color: var(--mute);
 }
 
@@ -66,7 +74,8 @@
 
 #mapdiv {
   width: 100%;
-  height: 380px;
+  /* [2026-10-06] 비교표 높이를 줄이면서 지도에 공간을 몰아줌 (380 -> 440 -> 560px) */
+  height: 560px;
 }
 
 /* ---- 증감률 diverging 범례 (지도 아래) ---- */
@@ -88,28 +97,13 @@
   margin-top: 4px;
 }
 
-/* 지도에서 드래그하는 동안 마우스를 따라다니는 라벨 (body에 append 되므로 map- 접두어 X) */
-.region-drag-ghost {
-  position: fixed;
-  z-index: 9999;
-  transform: translate(-50%, -50%);
-  background: #222;
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
 /* ---- 지역 비교표 ("전국 내 위치 표", 지도 하단) ----
-   왼쪽 컬럼 전체 vs 오른쪽 컬럼 전체가 곧 드롭 영역(data-slot).
-   헤더/각 행에 고정 높이(flex+min-height)를 줘서 세 컬럼이 세로줄 어긋나지 않게 함 */
+   헤더/각 행에 고정 높이를 줘서 세 컬럼이 세로줄 어긋나지 않게 함 */
 .map-compare-title {
   font-size: 13px;
   font-weight: bold;
   color: #333;
-  margin: 16px 0 6px 0;
+  margin: 10px 0 5px 0;
 }
 
 .compare-grid {
@@ -128,15 +122,7 @@
 }
 
 .compare-col {
-  border: 2px dashed transparent;
   padding: 0 4px;
-  transition: border-color 0.1s, background 0.1s;
-}
-
-/* 지도에서 지역을 드래그해서 이 컬럼 위로 가져왔을 때 (드롭 가능 하이라이트) */
-.compare-col.drag-over {
-  border-color: #ffb703;
-  background: #fff8e6;
 }
 
 .compare-mid {
@@ -149,8 +135,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  font-size: 13px;
+  height: 22px;
+  font-size: 12.5px;
   font-weight: bold;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -177,8 +163,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 3px 2px;
+  min-height: 26px;
+  padding: 2px 2px;
   border-top: 1px solid #eee;
   text-align: center;
   line-height: 1.25;
@@ -224,24 +210,118 @@
 }
 
 .compare-drop-hint {
+  font-size: 10.5px;
+  color: #aaa;
+  text-align: center;
+  margin: 5px 0 0 0;
+}
+
+/* ---- 전국 증감률 분포 스트립 (national-strip.js) ----
+   아직 비교 지역을 안 골랐을 때 비교표 자리에 대신 들어가는 납작한 점 차트.
+   17개 시도를 "가장 큰 감소 ←→ 가장 큰 증가" 가로축 위에 점으로 뿌림.
+   색은 지도와 같은 규칙(map.js의 divergingHex)을 쓰므로 여기서 색을 따로 정하지 않음. */
+.strip-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.strip-down { color: #1d4ed8; }  /* 감소 = 지도의 파란색 계열과 통일 */
+.strip-up { color: #d6006d; }    /* 증가 = 지도의 분홍색 계열과 통일 */
+
+.strip-hint {
+  color: #aaa;
+  white-space: nowrap;
+}
+
+/* 점들이 놓이는 트랙. 점을 absolute로 올리기 위한 기준 박스 */
+.strip-track {
+  position: relative;
+  height: 34px;
+  margin: 0 10px; /* 양 끝 점이 카드 경계에 딱 붙어 잘리지 않도록 여백 */
+}
+
+/* 가로 기준선 (눈금선은 배경 역할이라 아주 연하게) */
+.strip-axis {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e6eef8;
+}
+
+/* 0% 세로 기준선 - 증감의 경계라 축선보다는 진하게 */
+.strip-zero {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: #cbd5e6;
+  transform: translateX(-0.5px);
+}
+
+/* 시도 하나 = 점 하나. 흰 테두리로 겹친 점들이 덩어리로 읽히게 하고,
+   0% 근처라 거의 흰색인 점도 보이도록 바깥에 옅은 회색 링을 하나 더 둠 */
+.strip-dot {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(42, 54, 84, 0.25);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: width 0.1s, height 0.1s;
+}
+
+.strip-dot:hover,
+.strip-dot:focus-visible {
+  width: 17px;
+  height: 17px;
+  box-shadow: 0 0 0 2px rgba(42, 54, 84, 0.55);
+  outline: none;
+  z-index: 2;
+}
+
+/* 축 양 끝 라벨(최대 감소 지역 / 최대 증가 지역)과 0% 라벨.
+   17개 전부에 숫자를 달면 지저분해서 의미 있는 세 곳만 직접 표시함 */
+.strip-scale {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 10px 0 10px;
+  font-size: 10.5px;
+  color: #66789a;
+  white-space: nowrap;
+}
+
+.strip-scale-zero {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  color: #aab4c8;
+}
+
+.strip-empty {
   font-size: 11px;
   color: #aaa;
   text-align: center;
-  margin: 8px 0 0 0;
+  margin: 12px 0;
 }
 
 /* ---- 계약종별 도넛 카드 자체 (dashboard.html의 .row 안, kpi 카드 바로 아래) ----
-   [2026-09-30 개편] 원래 카드 폭 50%(kpi 카드 절반) + 도넛 3개(비교지역A/B + 전국평균
-   고정) 구성이었다가, "카드는 더 좁게, 도넛은 최대한 크게" 요청으로 아래처럼 바뀜:
-     - 카드 폭: 50% -> 30%로 축소.
-     - 도넛 개수: 3개 -> 2개로 축소. "전국 평균"은 별도 고정 도넛이 아니라, 왼쪽 도넛의
-       기본값으로 흡수함 (지역 미선택 시 전국평균, 선택하면 그 지역) - js/map-app.js 참고.
-     - 지자체명 캡션: 캔버스 위 별도 줄이 아니라 donut.js의 centerTextPlugin이 도넛
-       "정중앙"에 직접 그려 넣음 -> 캡션 줄이 사라진 만큼 도넛을 더 키울 수 있음.
-     - 범례: 도넛 아래 가로줄 -> 도넛 옆 오른쪽 세로 칼럼으로 이동 -> 역시 도넛이 쓸 수
-       있는 공간을 넓히기 위함.
-   flex 아이템 기본 특성상 min-width가 auto라서 안쪽 도넛이 커지면 카드도
-   같이 커지려고 하므로 min-width:0으로 그것도 막음. */
+   [2026-09-30 개편] 도넛 3개(지역A/B + 전국평균 고정) → 2개로 축소. 전국 평균은 왼쪽
+   도넛의 기본값으로 흡수함(지역 미선택 시 전국평균, 선택하면 그 지역 - js/map-app.js).
+   카드 폭은 50% → 30%로 줄여서 도넛에 공간 몰아줌. flex 기본 min-width:auto로
+   안쪽 도넛을 따라 커지려는 걸 min-width:0으로 막음. */
 .donut {
   flex: 0 0 30%;
   max-width: 30%;
@@ -289,11 +369,8 @@
 }
 
 /* 도넛 2개(왼쪽/오른쪽) + 범례를 한 줄에 가로로 배치.
-   오른쪽 도넛은 두 번째 지역을 선택하기 전까지 .is-empty로 숨겨져 있다가
-   (map-app.js가 토글) 선택하면 나타남.
-   [2026-09-30] justify-content:center로 바꿔서, 오른쪽 도넛이 숨겨져 도넛 한 개 +
-   범례만 남아도 그 둘이 카드 가운데로 모이게 함 (전엔 기본값(왼쪽 정렬)이라 도넛이
-   왼쪽에 붙고 범례와의 사이에 빈 공간이 뜨는 것처럼 보였음). */
+   오른쪽 도넛은 두 번째 지역을 선택하기 전까지 .is-empty로 숨겨짐(map-app.js 토글).
+   justify-content:center는 오른쪽 도넛이 숨겨졌을 때도 도넛+범례가 카드 가운데에 모이게 함. */
 .donut-compact-row {
   display: flex;
   align-items: center;
@@ -301,19 +378,15 @@
   gap: 6px;
 }
 
+/* [2026-09-30] 도넛 1개(전국평균)만 떠 있을 때도 2개 떠 있을 때와 똑같은 크기가 되게
+   max-width로 캡을 걸음. "범례(56px) + 간격(12px)을 뺀 나머지를 둘이 반씩 나눌 때의 폭" */
 .donut-compact {
-  /* [2026-09-30 네 번째 수정] 요청: "1개만 떠 있어도(전국평균) 2개 떠 있을 때랑 도넛
-     크기가 똑같아야 한다". 정사각형 계산 버그(donut-canvas-wrap 문단 참고)를 먼저
-     고치고 나니, 이제 이 캡을 다시 걸어도 정상적으로(찌그러지지 않고) 동작함.
-     아래 식은 "범례(56px)와 간격(gap 6px 두 번=12px)을 뺀 나머지를 도넛 두 개가
-     정확히 반씩 나눠 가질 때의 폭"과 동일 - 즉 도넛이 1개 떠 있든 2개 떠 있든
-     도넛 한 칸의 크기 자체는 항상 이 값으로 고정됨. */
   flex: 1 1 0;
   max-width: calc((100% - 56px - 12px) / 2);
-  min-width: 0; /* flex 아이템 기본 min-width:auto가 안쪽 캔버스 크기 따라 커지는 것 방지 */
+  min-width: 0; /* flex 기본 min-width:auto가 안쪽 캔버스를 따라 커지는 것 방지 */
   min-height: 0;
   display: flex;
-  align-items: center;   /* 세로 공간이 도넛(정사각형)보다 남으면 위아래 가운데로 */
+  align-items: center;
   justify-content: center;
 }
 
@@ -323,21 +396,13 @@
   display: none;
 }
 
-/* [2026-09-30 세 번째 수정] CSS만으로 "정사각형"을 만들려던 두 시도(aspect-ratio,
-   padding-bottom 트릭) 둘 다 결국 실패로 판명남. 브라우저 개발자도구로 실측해보니:
-   Chart.js가 컨테이너 크기를 잴 때 "padding으로 만들어낸 높이"를 진짜 높이로 안 쳐주고
-   반토막(폭의 절반)으로 오인식해서, 캔버스를 정사각형이 아니라 가로로 넓적하게
-   (예: 76x38) 그려버리는 버그가 있었음 - "도넛이 쭈그러들어 보인다"의 진짜 원인.
-   그래서 CSS 트릭을 완전히 버리고, 대신 donut.js에서 자바스크립트로 "지금 이 박스의
-   실제 폭을 재서 그 값을 그대로 height로 박아넣는" 가장 단순하고 확실한 방법으로 바꿈
-   (ResizeObserver로 폭이 바뀔 때마다 자동으로 다시 맞춰줌 - donut.js의
-   keepCanvasWrapSquare() 참고). 이러면 Chart.js 입장에서는 그냥 평범한 "실제 높이가
-   있는 박스"로 보이므로 더 이상 오작동하지 않음. */
+/* [2026-09-30] 높이는 여기서 안 잡고 donut.js의 keepCanvasWrapSquare()가 JS로
+   폭=높이를 직접 넣어줌. (CSS 트릭 aspect-ratio/padding-bottom 둘 다 Chart.js가
+   컨테이너 높이를 반토막으로 오인식해서 도넛이 쭈그러드는 버그가 있어 포기) */
 .donut-canvas-wrap {
   position: relative;
   width: 100%;
   max-width: 100%;
-  /* height는 여기서 고정하지 않음 - donut.js가 폭을 재서 JS로 직접 넣어줌 */
 }
 
 /* 계약종별 공통 범례. 예전엔 도넛 아래 가로 한 줄이었는데, 도넛 공간을 더 확보하기 위해

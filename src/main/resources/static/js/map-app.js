@@ -120,7 +120,6 @@ function renderAllForMonth(year, month) {
     regionData: monthData,
     metric: 'yoyRate',
     onRegionClick: selectRegionForCompare,   // 클릭: 첫 클릭=왼쪽, 두번째 클릭=오른쪽, 그 다음부턴 밀기
-    onRegionDropToSlot: selectRegionToSlot,  // 드래그: 놓은 칸(왼쪽/오른쪽)에 바로 지정
   });
 
   // (2) 도넛: 공통 범례(한 번만) + 도넛 2개
@@ -169,10 +168,8 @@ function selectRegionForCompare(sidoName) {
 }
 
 /**
- * 지도의 지역을 순위표 왼쪽/오른쪽 컬럼 위로 드래그해서 놓았을 때 호출됨
- * (map.js가 document 레벨의 pointerup에서 판단해 onRegionDropToSlot 콜백으로 넘겨줌)
- * 동작 규칙: 놓은 칸에 그 지역이 그대로 들어감 (밀기 없음, 클릭과 달리 순서 규칙을 안 탐).
- * 따라서 놓은 쪽 도넛만 갱신하면 됨.
+ * 특정 슬롯(left/right)을 지정해서 그 자리에 지역을 직접 꽂음 (밀기 없음, 순서 규칙 안 탐).
+ * handleRegionChangeRequest(칩 드롭다운)에서 사용. 놓은 쪽 도넛만 갱신하면 됨.
  */
 function selectRegionToSlot(sidoName, slot) {
   if (slot === 'left') {
@@ -184,6 +181,31 @@ function selectRegionToSlot(sidoName, slot) {
     updateCompareUI();
     renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
   }
+}
+
+/**
+ * [2026-10-06] 칩(fragments/chips.html)의 드롭다운에서 지역을 직접 골랐을 때 호출됨
+ * (chip.js가 'region:change-request' 이벤트로 요청을 보내옴).
+ *
+ * 칩이 sessionStorage를 직접 고치지 않고 굳이 이쪽에 요청하는 이유: 선택 상태를 들고 있는
+ * 건 이 파일이라, 칩이 혼자 값을 바꿔버리면 지도 테두리·도넛·순위표는 그대로 남아서
+ * 화면끼리 어긋남. 그래서 "지도를 클릭했을 때와 똑같은 경로"로 처리되게 넘겨받음.
+ */
+function handleRegionChangeRequest(e) {
+  if (!mapControls) return; // 지도가 아직 안 그려졌으면(데이터 로딩 중) 무시
+
+  const { slot, sido } = e.detail;
+
+  // 같은 지역이 A/B 양쪽에 동시에 들어가면 "서울 vs 서울"을 비교하는 꼴이 되므로,
+  // 고른 지역이 반대쪽에 이미 있으면 그쪽을 비워서 자리를 옮기는 것처럼 동작하게 함.
+  if (sido && slot === 'left' && sido === compareRight) compareRight = null;
+  if (sido && slot === 'right' && sido === compareLeft) compareLeft = null;
+
+  selectRegionToSlot(sido, slot);
+
+  // 위에서 반대쪽이 비워졌을 수도 있으니 두 도넛 다 다시 그림
+  renderCompareLeftDonut(compareLeft, CURRENT_YEAR, CURRENT_MONTH);
+  renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
 }
 
 
@@ -207,7 +229,20 @@ function updateCompareUI() {
   const leftRec  = compareLeft  ? getRecord(compareLeft,  CURRENT_YEAR, CURRENT_MONTH) : null;
   const rightRec = compareRight ? getRecord(compareRight, CURRENT_YEAR, CURRENT_MONTH) : null;
 
-  renderCompareRankTable('compareRankTable', compareLeft, compareRight, leftRec, rightRec);
+  // [2026-10-06] 지도 아래 한 자리를 상황에 따라 바꿔 끼움.
+  //   아무것도 안 골랐을 때 비교표를 띄워봐야 "-"만 가득한 빈 표라 의미가 없어서,
+  //   그 자리에 "전국 증감률 분포"를 대신 보여주고, 지역을 고르는 순간 비교표로 교체함.
+  const hasSelection = !!(compareLeft || compareRight);
+
+  const titleEl = document.getElementById('compareSectionTitle');
+  if (titleEl) titleEl.textContent = hasSelection ? '전국 내 위치 (지역 비교)' : '전국 증감률 분포';
+
+  if (hasSelection) {
+    renderCompareRankTable('compareRankTable', compareLeft, compareRight, leftRec, rightRec);
+  } else {
+    // 분포 스트립의 점을 클릭하면 지도에서 그 지역을 클릭한 것과 똑같이 처리됨
+    renderNationalStrip('compareRankTable', getRecordsForMonth(CURRENT_YEAR, CURRENT_MONTH), selectRegionForCompare);
+  }
 
   // (1) sessionStorage에 저장. 값이 없으면(null) 키 자체를 지움 - "빈 문자열"이 아니라
   //     아예 없는 상태로 둬야, 읽는 쪽에서 `sessionStorage.getItem(...)`이 null을 리턴해서
@@ -306,3 +341,6 @@ function renderCompareRightDonut(sidoName, year, month) {
 // 실행 시작
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', bootstrap);
+
+// 칩 드롭다운에서 직접 지역을 고른 경우 (chip.js -> 이 파일)
+document.addEventListener('region:change-request', handleRegionChangeRequest);

@@ -4,18 +4,21 @@
      원래는 [1번 소유]로 정해진 조각인데, 지도 클릭값이랑 바로 이어져야 해서
      일단 2번이 작업함. 1번이 디자인/위치를 자유롭게 바꿔도 전혀 무해합니다.
 
-     역할: 지도에서 고른 비교 지역 2개(A, B)를 얇은 인풋 2개로 그대로 보여주기만
-           하는 조각. 값을 직접 계산하지 않음 - 그냥 표시만 함.
+     역할: 비교 지역 2개(A, B)를 보여주는 동시에, 직접 고를 수도 있는 드롭다운 2개.
 
-     동작 방식:
-       - map-app.js가 지역을 고를 때마다(첫 클릭=A, 두 번째 클릭=B, 그 다음부턴 밀기)
-         'region:selected' 라는 커스텀 이벤트를 document에 쏨.
-       - 이 조각의 /js/chip.js가 그 이벤트만 듣고 있다가 인풋 값을 채워줌.
-       - 컨트롤러도, URL 파싱도 필요 없음 - 같은 화면 안 자바스크립트끼리의 대화라서.
+     [2026-10-06] readonly 인풋 -> <select> 드롭다운으로 변경.
+       예전에는 지도 클릭으로만 값이 채워지는 "표시 전용" 칸이었는데, 지도를 거치지 않고
+       여기서 바로 지역을 바꾸고 싶다는 요청으로 드롭다운이 됨. 항목은 chip.js가
+       sido-map-codes.js의 시도 목록(17개)을 읽어서 자동으로 채움 - 여기에 <option>을
+       일일이 적어두지 않는 이유는, 시도명 목록의 출처를 한 파일로만 유지하기 위해서.
 
-     인풋을 readonly로 둔 이유: 값은 지도 클릭으로만 채워지는 게 맞고, 사용자가
-     아무 문자열이나 직접 타이핑하면(예: 오타난 지역명) 나중에 상세 데이터 페이지에서
-     그 값으로 조회할 때 매칭이 안 될 수 있음.
+     동작 방식 (양방향):
+       - 지도에서 고르면  : map-app.js가 'region:selected' 이벤트를 쏨 -> chip.js가 듣고
+                            드롭다운 값만 갱신
+       - 드롭다운에서 고르면: chip.js가 'region:change-request' 이벤트를 쏨 -> map-app.js가
+                            듣고 지도/도넛/순위표까지 같이 갱신
+       칩이 sessionStorage를 직접 고치지 않는 이유: 그러면 지도·도넛·순위표는 값이 바뀐 걸
+       모른 채로 있어서 화면끼리 어긋남. 선택 상태의 주인은 map-app.js 한 곳으로 유지함.
 
      ⚠ <script>는 반드시 이 div(th:fragment="chips") "안쪽"에 있어야 함!
        th:replace는 th:fragment가 걸린 엘리먼트 자체만 가져오기 때문에, 예전처럼
@@ -26,8 +29,15 @@
 <div th:fragment="chips" class="card chips">
   <div class="chip-row">
     <span class="chip-label">지역비교</span>
-    <input type="text" id="chipA" class="chip-input" placeholder="지도에서 지역을 선택하세요" readonly>
-    <input type="text" id="chipB" class="chip-input" placeholder="두 번째 지역 (선택)" readonly>
+
+    <!-- 안쪽 <option>은 chip.js가 17개 시도로 채움. 여기 적힌 건 "아직 안 고름" 상태의
+         안내 문구(값이 빈 문자열이라 선택 해제 용도로도 쓰임). -->
+    <select id="chipA" class="chip-input" aria-label="비교 지역 A">
+      <option value="">지도에서 지역을 선택하세요</option>
+    </select>
+    <select id="chipB" class="chip-input" aria-label="비교 지역 B">
+      <option value="">두 번째 지역 (선택)</option>
+    </select>
   </div>
 
   <script th:src="@{/js/chip.js}"></script>
