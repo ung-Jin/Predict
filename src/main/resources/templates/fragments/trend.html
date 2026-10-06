@@ -12,8 +12,12 @@
     <canvas id="trendChart"></canvas>
   </div>
 
-  <!-- script 는 반드시 이 fragment div "안쪽"에 둬야 최종 페이지에 실린다 (chips.html, donut.html 과 같은 관례)
-       chart.js 와 axios 는 dashboard.html head 에서 이미 불러온다 -->
+  <!-- script 는 반드시 이 fragment div "안쪽"에 둬야 최종 페이지에 실린다 (chips.html, donut.html 과 같은 관례).
+       dashboard.html 은 1번 소유라, 필요한 것을 조각이 직접 불러온다.
+       세 조각이 같은 파일을 불러도 브라우저가 캐시하고, kpi-common.js 는 다시 실행돼도 안전하다.
+       chart.js 는 dashboard.html 에 원래부터 있다. -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
+  <script th:src="@{/js/kpi-common.js}"></script>
   <script th:src="@{/js/trend.js}"></script>
 
 </div>

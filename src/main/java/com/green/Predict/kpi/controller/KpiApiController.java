@@ -38,10 +38,10 @@ public class KpiApiController {
     return kpiService.getForecast3Data(a, b);
   }
 
-  //시도별 예측 증감률 - 선택 0개일 때 (static/js/yoyrank.js 가 호출)
-  @GetMapping("/yoyrank")
-  public Map<String, Object> yoyrank(){
-    return kpiService.getYoyRankData();
+  //시도별 증감률 순위 - 지역을 고르지 않았을 때 (static/js/rank.js 가 호출)
+  @GetMapping("/rank")
+  public Map<String, Object> rank(){
+    return kpiService.getRankData();
   }
 
   //월별 사용량 추이 (static/js/trend.js 가 호출)

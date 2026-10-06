@@ -1,178 +1,158 @@
 /* [3번 소유] 앞으로 3개월 예측
  *
- * 데이터는 /chart-api/forecast3 에서 axios 로 받아온다 (KpiApiController -> KpiService).
- * 응답 형태 : { unit : 'GWh', labels : ['8월','9월','10월'],
- *               series : [ {name, predicted:[...], prevYear:[...], yoyPct:[...]}, ... ] }
+ * 데이터는 /chart-api/forecast3 에서 받아온다.
+ * 받는 모양 : {
+ *   unit : 'GWh',
+ *   labels : ['8월', '9월', '10월'],
+ *   series : [ {name:'서울', predicted:[...], prevYear:[...], yoyPct:[...]}, ... ]
+ * }
  *
- * 한 달마다 시리즈별로 막대 두 개를 세운다 - 얇은 쪽이 작년 실적, 진한 쪽이 예측.
- * 막대 아래 캡션에는 전년 동월 대비 증감률을 글자로 적는다.
+ * 한 달마다 줄(지역)별로 막대를 두 개 세운다.
+ *   얇고 옅은 막대 = 작년 같은 달 실적
+ *   진한 막대      = 올해 예측
+ * 막대 아래에는 전년 동월 대비 증감률을 글자로 적는다.
  */
 
+//차트 객체를 저장할 변수. 다시 그릴 때 이전 차트를 지우는 데 쓴다
 let savedForecast3Chart = null;
 
-//한 시리즈를 "작년 / 예측" 막대 두 벌로 만든다
-function forecast3Datasets(series){
-  const datasets = [];
+//한 줄(지역)을 "작년 / 예측" 막대 두 개로 만드는 함수
+function makeForecast3Bars(one, index){
+  const color = kpiSeriesColor(index, one.name);
+  const lightColor = kpiSeriesLightColor(index, one.name);
 
-  series.forEach((one, index) => {
-    const color = kpiSeriesColor(index, one.name);
+  //작년 막대 : 얇고 옅게. 비교 기준이라 눈에 덜 띄게 한다
+  const lastYearBar = {
+    label : one.name + ' 작년',
+    data : one.prevYear,
+    backgroundColor : lightColor,
+    borderWidth : 0,
+    borderRadius : 4,
+    barPercentage : 0.5
+  };
 
-    //작년 : 얇고 옅게. 비교 기준이지 주인공이 아니다
-    datasets.push({
-      label : one.name + ' 작년',
-      data : one.prevYear,
-      backgroundColor : kpiAlpha(color, 0.28),
-      borderWidth : 0,
-      borderRadius : { topLeft : 4, topRight : 4 },
-      barPercentage : 0.5,
-      categoryPercentage : 0.8
-    });
+  //예측 막대 : 진하게
+  const predictedBar = {
+    label : one.name,
+    data : one.predicted,
+    backgroundColor : color,
+    borderWidth : 0,
+    borderRadius : 4,
+    barPercentage : 0.75
+  };
 
-    //예측 : 진하게
-    datasets.push({
-      label : one.name,
-      data : one.predicted,
-      backgroundColor : color,
-      borderWidth : 0,
-      borderRadius : { topLeft : 4, topRight : 4 },
-      barPercentage : 0.75,
-      categoryPercentage : 0.8
-    });
-  });
-
-  return datasets;
+  return [lastYearBar, predictedBar];
 }
 
-//막대 아래에 달 별 증감률을 적는다 (막대 위에 숫자를 다 올리면 읽히지 않는다)
+//막대 아래 증감률 글자 채우기 (막대 위에 숫자를 다 올리면 읽기 힘들어서 아래에 적는다)
 function drawForecast3Caption(chartData){
-  const box = document.querySelector('#forecast3Caption');
-  if(!box) return;
+  const caption = document.querySelector('#forecast3Caption');
+  const labels = chartData.labels;
+  const series = chartData.series;
 
-  const labels = chartData.labels || [];
-  const series = chartData.series || [];
+  //달 수만큼 칸을 만든다 (8월 / 9월 / 10월 이면 3칸)
+  caption.style.gridTemplateColumns = 'repeat(' + labels.length + ', 1fr)';
 
-  box.style.gridTemplateColumns = 'repeat(' + labels.length + ', 1fr)';
-  box.textContent = '';
+  let html = '';
 
-  //달 이름은 차트 x축이 이미 보여주므로, 여기서는 칸만 맞추고 증감률만 적는다
-  labels.forEach((_, monthIndex) => {
-    const cell = document.createElement('div');
-    cell.className = 'f3-caption-cell';
+  //달 하나마다 한 칸, 그 안에 지역 수만큼 줄을 쌓는다
+  for(let month = 0; month < labels.length; month++){
+    html += '<div class="f3-caption-cell">';
 
-    series.forEach((one, index) => {
-      const item = document.createElement('span');
-      item.className = 'f3-caption-item';
+    for(let i = 0; i < series.length; i++){
+      const one = series[i];
+      const color = kpiSeriesColor(i, one.name);
+      const valueText = kpiSigned(one.yoyPct[month], 1) + '%';
 
-      const dot = document.createElement('span');
-      dot.className = 'f3-dot';
-      dot.style.background = kpiSeriesColor(index, one.name);
+      html += '<span class="f3-caption-item">';
+      html += '  <span class="f3-dot" style="background:' + color + '"></span>';
+      html += '  <span>' + one.name + ' ' + valueText + '</span>';
+      html += '</span>';
+    }
 
-      const text = document.createElement('span');
-      text.textContent = one.name + ' ' + kpiSigned(one.yoyPct[monthIndex], 1) + '%';
+    html += '</div>';
+  }
 
-      item.appendChild(dot);
-      item.appendChild(text);
-      cell.appendChild(item);
-    });
-
-    box.appendChild(cell);
-  });
+  caption.innerHTML = html;
 }
 
 //앞으로 3개월 예측 막대 차트 그리기
-function drawForecast3(chartData){
+function drawForecast3Chart(chartData){
   //차트 그릴 영역을 선택
   const forecast3Chart = document.querySelector('#forecast3Chart');
-  if(!forecast3Chart || !chartData || !chartData.series) return;
 
-  const mute = getComputedStyle(document.documentElement).getPropertyValue('--mute').trim() || '#66789A';
-  const line = getComputedStyle(document.documentElement).getPropertyValue('--line').trim() || '#E6EEF8';
-  const unit = chartData.unit || 'GWh';
+  //지역 수만큼 막대 묶음을 만들어 한 배열에 모은다
+  let datasets = [];
+  for(let i = 0; i < chartData.series.length; i++){
+    datasets = datasets.concat(makeForecast3Bars(chartData.series[i], i));
+  }
 
-  //같은 캔버스에 두 번 그리면 Chart.js 가 에러를 낸다. 갱신 전에 반드시 정리
-  if(savedForecast3Chart) savedForecast3Chart.destroy();
+  //같은 자리에 두 번 그리면 Chart.js 가 오류를 내므로, 그리기 전에 이전 차트를 지운다
+  if(savedForecast3Chart){
+    savedForecast3Chart.destroy();
+  }
 
   //new Chart(어디에, 어떻게);
   savedForecast3Chart = new Chart(forecast3Chart, {
-    type : 'bar',
+    type : 'bar',       //차트 종류
     data : {
-      labels : chartData.labels,
-      datasets : forecast3Datasets(chartData.series)
+      labels : chartData.labels,   //x축에 표시할 항목 (8월, 9월, 10월)
+      datasets : datasets          //y축에 표시할 막대들
     },
     options : {
       responsive : true,
+      //높이는 forecast3.css 가 정한다. 이 값이 true 면 캔버스가 계속 늘어난다
       maintainAspectRatio : false,
-      interaction : { mode : 'index', intersect : false },
       plugins : {
-        //2번 donut.js 가 chartjs-plugin-datalabels 를 전역 등록해서 막대마다 숫자가 찍힌다. 끈다
+        //2번 donut.js 가 숫자 표시 플러그인을 전체에 켜둬서 막대마다 숫자가 찍힌다. 여기선 끈다
         datalabels : { display : false },
         legend : {
           position : 'top',
           align : 'end',
           labels : {
             usePointStyle : true,
-            pointStyle : 'circle',
+            pointStyle : 'circle',   //범례 표시를 작은 동그라미로
             boxWidth : 8,
-            boxHeight : 8,
             padding : 14,
-            color : mute,
-            font : { size : 12 },
-            //"작년" 막대는 범례에서 뺀다. 머리말에 "얇은 막대는 작년"이라고 적어둔다
-            filter : (item) => item.text.indexOf(' 작년') === -1
-          }
-        },
-        tooltip : {
-          backgroundColor : '#fff',
-          titleColor : '#2A3654',
-          bodyColor : '#2A3654',
-          borderColor : line,
-          borderWidth : 1,
-          padding : 10,
-          cornerRadius : 8,
-          callbacks : {
-            label : (ctx) => ' ' + ctx.dataset.label + '  ' + ctx.parsed.y.toLocaleString() + ' ' + unit
+            //'작년' 막대는 범례에서 뺀다. 제목 옆에 "얇은 막대는 작년"이라고 적어뒀다
+            filter : function(item){
+              return item.text.indexOf(' 작년') === -1;
+            }
           }
         }
       },
       scales : {
-        x : {
-          grid : { display : false },
-          border : { color : line },
-          ticks : { color : mute, font : { size : 11 } }
-        },
+        //세로 격자선은 끈다 (막대 자체가 이미 구분된다)
+        x : { grid : { display : false } },
         y : {
           beginAtZero : true,
-          grid : { color : line, drawTicks : false },
-          border : { display : false },
-          ticks : {
-            color : mute,
-            font : { size : 11 },
-            maxTicksLimit : 5,
-            callback : (value) => value.toLocaleString()
-          }
+          ticks : { maxTicksLimit : 5 }
         }
       }
     }
   });
-
-  drawForecast3Caption(chartData);
 }
 
-//앞으로 3개월 예측 데이터 조회 및 그림 그리기
-function getForecast3DataAndDraw(){
-  axios.get('/chart-api/forecast3', kpiRequestParams())
-  .then((response)=>{
-    //response.data; 자바에서 리턴받은 데이터
-    console.log(response.data);
-    drawForecast3(response.data);
-  })
-  .catch((error)=>{
+//화면이 열리면 3개월 예측 데이터를 조회하는 함수
+async function getForecast3Data(){
+  let resultData;
+
+  try{
+    const response = await axios.get('/chart-api/forecast3', kpiRequestParams());
+    resultData = response.data;   //자바에서 리턴받은 데이터
+    console.log(resultData);
+
+  }catch(error){
     console.log('앞으로 3개월 예측 조회 시 오류 발생');
     console.log(error);
-  });
+    return;   //데이터를 못 받았으면 그리지 않는다
+  }
+
+  drawForecast3Chart(resultData);
+  drawForecast3Caption(resultData);
 }
 
-getForecast3DataAndDraw();
+getForecast3Data();
 
 //지도에서 지역을 고르거나 뺄 때마다 다시 조회해서 다시 그린다
-onRegionChange(getForecast3DataAndDraw);
+onRegionChange(getForecast3Data);

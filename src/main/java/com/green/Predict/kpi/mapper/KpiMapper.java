@@ -10,21 +10,24 @@ import java.util.List;
 @Mapper
 public interface KpiMapper {
 
-  //regionName 이 null 이면 17개 시도 전체를 집계한다 (합계/평균을 같이 돌려줌)
+  //regionName 이 null 이면 17개 시도 전체를, 값이 있으면 그 시도만 조회한다
 
-  //요약 카드 4개에 필요한 값 (한 행)
-  List<HashMap<String, Object>> getCard(@Param("regionName") String regionName);
+  //실측이 있는 가장 최근 달 (한 줄)
+  List<HashMap<String, Object>> getRecentUsage(@Param("regionName") String regionName);
 
-  //월별 실측 추이 (2022.01 ~ 데이터 끝)
+  //검증 오차 MAPE (한 줄)
+  List<HashMap<String, Object>> getMape(@Param("regionName") String regionName);
+
+  //월별 실측 사용량 (2022년 1월 ~ 데이터 끝)
   List<HashMap<String, Object>> getActualTrend(@Param("regionName") String regionName);
 
   //앞으로 3개월 예측 (작년 같은 달 실적 포함)
   List<HashMap<String, Object>> getForecastTrend(@Param("regionName") String regionName);
 
-  //가장 이른 예측 달의 시도별 전년 동월 대비 증감률 (선택 0개일 때 쓰는 순위 카드)
+  //시도별 증감률 순위 (지역을 안 골랐을 때 쓰는 카드)
   List<HashMap<String, Object>> getForecastByRegion();
 
-  //시도명 -> 짧은 이름 변환에 쓸 목록
+  //시도명 목록 ('서울특별시' -> '서울' 변환용)
   List<HashMap<String, Object>> getRegions();
 
 }
