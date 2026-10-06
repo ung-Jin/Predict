@@ -1,0 +1,83 @@
+/* [3번 소유] 시도별 증감률 순위 (지역을 하나도 고르지 않았을 때) */
+
+/* 증감 색은 2번 지도와 같은 규칙을 쓴다.
+   막대 "길이"가 변화폭, 막대 "색"이 증가/감소 방향을 나타낸다. */
+:root {
+  --rank-up: #D6006D;     /* 증가 (분홍) */
+  --rank-down: #3F72B5;   /* 감소 (파랑) */
+  --rank-zero: #C6D2E3;   /* 변화 없음 (중립 회색) */
+}
+
+.rank {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 카드 머리말 : 제목 옆에 "전년 동월 대비" */
+.rank-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rank-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rank-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+/* 17개 시도를 두 열로 나눠 담는다.
+   grid-auto-flow:column 이라 앞쪽 절반이 왼쪽 열에 세로로 쌓인다.
+   한 열에 몇 줄인지(grid-template-rows)는 rank.js 가 데이터 개수에 맞춰 넣는다. */
+.rank-list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 18px;
+  row-gap: 5px;
+}
+
+/* 한 줄 = [지역명] [막대] [값] */
+.rank-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+}
+
+.rank-name {
+  font-size: 12px;
+  color: var(--mute);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 막대가 놓이는 트랙 (값이 0 이어도 보이는 바탕) */
+.rank-bar {
+  height: 8px;
+  background: #F1F5FB;
+  border-radius: 4px;
+}
+
+/* 실제 막대. 길이(width)와 색(background)은 rank.js 가 넣는다.
+   기준선(왼쪽)은 각지게, 값이 끝나는 쪽(오른쪽)만 둥글게. */
+.rank-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+}
+
+.rank-value {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;   /* 숫자 폭을 고정해 자릿수가 달라도 세로로 정렬되게 */
+}

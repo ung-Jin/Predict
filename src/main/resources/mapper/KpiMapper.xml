@@ -1,13 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- KPI(요약 카드 / 3개월 예측 / 월별 추이 / 시도별 순위) 쿼리문 -->
+<!-- 결과를 HashMap 으로 받으므로, 컬럼 별칭(AS 뒤에 쓴 이름)이 그대로 자바에서 쓰는 key 가 된다 -->
 <mapper namespace="com.green.Predict.kpi.mapper.KpiMapper">
 
-    <select id="findCard" resultType="com.green.Predict.kpi.dto.ForecastCard">
+<!--
+  아래 쿼리들의 공통 규칙
 
-    </select>
+  1) regionName 이 있으면 그 시도만, 없으면 17개 시도 전체를 본다.
+     <if> 는 조건이 참일 때만 그 안의 SQL 을 끼워 넣는 MyBatis 문법이다.
 
-    <select id="findTrend" resultType="com.green.Predict.kpi.dto.TrendPoint">
+  2) 전체를 볼 때 쓸 값이 두 가지라서 합계와 평균을 같이 가져온다.
+       - 지역을 안 골랐을 때  : 전국 합계   -> TOTAL_KWH
+       - 지역을 하나 골랐을 때 : 시도 평균  -> AVG_KWH (고른 지역과 비교하는 용도)
+     시도 하나만 걸렀을 때는 행이 한 줄뿐이라 합계와 평균이 같은 값이 된다.
+-->
 
-    </select>
+<!--  1. 실측이 있는 가장 최근 달 (지금 데이터로는 2026년 7월) -->
+  <select id="getRecentUsage" resultType="HashMap">
+    SELECT md.year  AS DATA_YEAR
+         , md.month AS DATA_MONTH
+         , SUM(md.usage_kwh) AS TOTAL_KWH
+         , AVG(md.usage_kwh) AS AVG_KWH
+    FROM monthly_data md
+    JOIN region rg ON rg.region_id = md.region_id
+    <if test="regionName != null">
+      WHERE rg.region_name = #{regionName}
+    </if>
+    GROUP BY md.year, md.month
+    ORDER BY md.year DESC, md.month DESC
+    LIMIT 1
+  </select>
+
+<!--  2. 검증 오차(MAPE). 예측이 실제보다 평균 몇 % 빗나갔는지.
+       지역 x 월 한 줄마다 오차율을 구해서 전부 평균낸다.
+       지역을 안 고르면 17개 시도 x 12개월 = 204줄의 평균이 된다. -->
+  <select id="getMape" resultType="HashMap">
+    SELECT ROUND(AVG(ABS(bt.predicted_kwh - bt.actual_kwh) / bt.actual_kwh) * 100, 2) AS MAPE
+    FROM backtest bt
+    JOIN region rg ON rg.region_id = bt.region_id
+    <if test="regionName != null">
+      WHERE rg.region_name = #{regionName}
+    </if>
+  </select>
+
+<!--  3. 월별 실측 사용량 (2022년 1월부터 데이터 끝까지). 추이 차트의 실선 -->
+  <select id="getActualTrend" resultType="HashMap">
+    SELECT md.year  AS DATA_YEAR
+         , md.month AS DATA_MONTH
+         , SUM(md.usage_kwh) AS TOTAL_KWH
+         , AVG(md.usage_kwh) AS AVG_KWH
+    FROM monthly_data md
+    JOIN region rg ON rg.region_id = md.region_id
+    <if test="regionName != null">
+      WHERE rg.region_name = #{regionName}
+    </if>
+    GROUP BY md.year, md.month
+    ORDER BY md.year, md.month
+  </select>
+
+<!--  4. 앞으로 3개월 예측 (2026년 8 ~ 10월).
+       작년 같은 달 실적도 같이 가져와서 막대 비교와 증감률 계산에 쓴다.
+       증감률 = (예측 / 작년 - 1) x 100 -->
+  <select id="getForecastTrend" resultType="HashMap">
+    SELECT fc.year  AS DATA_YEAR
+         , fc.month AS DATA_MONTH
+         , SUM(fc.predicted_kwh) AS TOTAL_KWH
+         , AVG(fc.predicted_kwh) AS AVG_KWH
+         , SUM(fc.prev_year_kwh) AS PREV_TOTAL_KWH
+         , AVG(fc.prev_year_kwh) AS PREV_AVG_KWH
+         , ROUND((SUM(fc.predicted_kwh) / SUM(fc.prev_year_kwh) - 1) * 100, 1) AS YOY_PCT
+    FROM forecast fc
+    JOIN region rg ON rg.region_id = fc.region_id
+    <if test="regionName != null">
+      WHERE rg.region_name = #{regionName}
+    </if>
+    GROUP BY fc.year, fc.month
+    ORDER BY fc.year, fc.month
+  </select>
+
+<!--  5. 시도별 증감률 순위 (지역을 하나도 안 골랐을 때 보여주는 카드).
+       먼저 안쪽 괄호에서 "가장 이른 예측 달"(2026년 8월) 한 줄을 뽑고,
+       그 달에 해당하는 17개 시도만 남겨서 증가가 큰 순으로 정렬한다. -->
+  <select id="getForecastByRegion" resultType="HashMap">
+    SELECT rg.short_name  AS SHORT_NAME
+         , rg.region_name AS REGION_NAME
+         , fc.year        AS DATA_YEAR
+         , fc.month       AS DATA_MONTH
+         , ROUND((fc.predicted_kwh / fc.prev_year_kwh - 1) * 100, 1) AS YOY_PCT
+    FROM forecast fc
+    JOIN region rg ON rg.region_id = fc.region_id
+    JOIN (SELECT year AS y, month AS m
+          FROM forecast
+          ORDER BY year, month
+          LIMIT 1) first ON fc.year = first.y AND fc.month = first.m
+    ORDER BY YOY_PCT DESC, rg.short_name
+  </select>
+
+<!--  6. 시도명 목록. '서울특별시' -> '서울' 로 짧게 바꿀 때 쓴다 -->
+  <select id="getRegions" resultType="HashMap">
+    SELECT region_name AS REGION_NAME
+         , short_name  AS SHORT_NAME
+    FROM region
+    ORDER BY region_id
+  </select>
 
 </mapper>

@@ -1,4 +1,18 @@
-<!-- [1번 소유] 시도별 증감률 순위 (선택 0개일 때) -->
+<!-- [3번 소유] 시도별 증감률 순위 (지역을 하나도 고르지 않았을 때) -->
+<!-- 지역을 고르면 1번의 js/dashboard.js 가 이 카드를 숨기고 forecast3 을 대신 보여준다 -->
 <div th:fragment="rank" class="card rank">
-  <p>시도별 증감률 순위 (선택 0개일 때) (1번 작업 영역)</p>
+
+  <div class="rank-head">
+    <p class="rank-title">시도별 <span id="rank-month">8</span>월 예측 증감률</p>
+    <p class="rank-sub">전년 동월 대비</p>
+  </div>
+
+  <!-- 목록은 rank.js 가 채운다 -->
+  <div class="rank-list" id="rank-list"></div>
+
+  <!-- script 는 반드시 이 fragment div "안쪽"에 둬야 최종 페이지에 실린다
+       (chips.html, donut.html 과 같은 관례. dashboard.html 은 1번 소유라 건드리지 않는다) -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
+  <script th:src="@{/js/rank.js}"></script>
+
 </div>
