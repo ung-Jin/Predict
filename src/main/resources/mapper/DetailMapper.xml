@@ -1,9 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+  [4번 소유] 상세 데이터 페이지 좌측 "지역별 상세" 표 전용 SQL.
+  대상 테이블: region / forecast / backtest (predict.sql 기준)
+
+  우측 차트 3종은 1번 팀원이 담당하므로 이 파일에는 관련 쿼리가 없다.
+-->
 <mapper namespace="com.green.Predict.detail.mapper.DetailMapper">
 
-    <select id="findAllDetail" resultType="com.green.Predict.detail.dto.RegionDetailRow">
+  <!--
+    좌측 표: 17개 시도의 "8월 예측 + 전년대비 + 정확도 3종"을 한 번에.
 
-    </select>
+    - 8월 예측 = forecast에서 가장 이른 (year, month) 행 (= 2026.08)
+    - 정확도(MAPE/RMSE/MAE)는 backtest 전 구간을 지역별로 집계
+    - 모든 전력량 지표는 GWh 로 환산해서 내려보낸다 (화면도 GWh)
+  -->
+  <select id="findAllRegionRows"
+          resultType="com.green.Predict.detail.dto.RegionDetailRow">
+    SELECT
+        rg.region_id   AS regionId,
+        rg.region_name AS regionName,
+        rg.short_name  AS shortName,
+        ROUND(fc.predicted_kwh / 1000000)                             AS predictedGwh,
+        ROUND((fc.predicted_kwh / fc.prev_year_kwh - 1) * 100, 1)     AS yoyPct,
+        acc.mape                                                      AS mape,
+        acc.rmseGwh                                                   AS rmseGwh,
+        acc.maeGwh                                                    AS maeGwh
+    FROM region rg
+    JOIN forecast fc
+        ON fc.region_id = rg.region_id
+    JOIN (SELECT year AS y, month AS m
+          FROM forecast
+          ORDER BY year, month
+          LIMIT 1) first
+        ON fc.year = first.y AND fc.month = first.m
+    LEFT JOIN (
+        SELECT bt.region_id,
+               ROUND(AVG(ABS(bt.predicted_kwh - bt.actual_kwh) / bt.actual_kwh) * 100, 2) AS mape,
+               ROUND(SQRT(AVG(POW(bt.predicted_kwh - bt.actual_kwh, 2))) / 1000000, 1)    AS rmseGwh,
+               ROUND(AVG(ABS(bt.predicted_kwh - bt.actual_kwh)) / 1000000, 1)             AS maeGwh
+        FROM backtest bt
+        GROUP BY bt.region_id
+    ) acc ON acc.region_id = rg.region_id
+    ORDER BY predictedGwh DESC
+  </select>
 
 </mapper>

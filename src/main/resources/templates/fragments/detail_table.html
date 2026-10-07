@@ -1,4 +1,44 @@
-<!-- [4번 소유] 지역별 표 (행 클릭으로 선택) -->
-<div th:fragment="detail_table" class="card detail_table">
-  <p>지역별 표 (행 클릭으로 선택) (4번 작업 영역)</p>
+<!--
+  [4번 소유] 좌측 "지역별 상세" 표.
+  헤더는 Thymeleaf에서 서버로 넣고, 본문(행 17개)은 /detail-api/table 응답을 받아
+  detail.js 가 그린다 (선택 하이라이트/칩 뱃지도 JS가 담당).
+-->
+<div th:fragment="detail_table" class="card detail-table">
+
+  <div class="dt-head">
+    <div>
+      <span class="dt-title">지역별 상세</span>
+      <span class="dt-hint">행을 눌러 지역 선택 · 최대 2개</span>
+    </div>
+  </div>
+
+  <div class="dt-tbl-wrap">
+    <table class="dt-tbl">
+      <thead>
+        <tr>
+          <th class="dt-col-sido">시도</th>
+          <th class="dt-col-fc">
+            8월 예측<span class="dt-sub">GWh · 큰 순</span>
+          </th>
+          <th class="dt-col-yoy">
+            전년 대비<span class="dt-sub">파랑 감소 · 코랄 증가</span>
+          </th>
+          <th class="dt-col-mape">
+            MAPE<span class="dt-sub">낮을수록 정확</span>
+          </th>
+          <th class="dt-col-rmse">RMSE<span class="dt-sub">GWh</span></th>
+          <th class="dt-col-mae">MAE<span class="dt-sub">GWh</span></th>
+        </tr>
+      </thead>
+      <!-- JS가 fetch로 받은 17개 행을 여기에 그린다 -->
+      <tbody id="dtTbody">
+        <tr class="dt-empty"><td colspan="6">데이터를 불러오는 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="dt-foot">
+    MAPE·RMSE·MAE는 검증 기간(2025.8~2026.7)에서 예측이 실제와 얼마나 달랐는지를 나타냅니다.
+    값이 작을수록 예측이 정확합니다.
+  </p>
 </div>
