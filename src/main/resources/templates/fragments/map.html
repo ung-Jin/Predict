@@ -35,7 +35,8 @@
      ============================================================================ -->
 <div th:fragment="map" class="card map">
 
-  <h3 class="map-title">전국 전력사용량 지도 (전년동월대비 증감률)</h3>
+  <!-- 괄호 안 지표명은 map-app.js가 부트스트랩 시 채움 (현재: "N월 예측 증감률" - /chart-api/rank 기준) -->
+  <h3 class="map-title">전국 전력사용량 지도 (<span id="mapMetricLabel">예측 증감률</span>)</h3>
 
   <!-- amCharts5가 이 div에 SVG로 지도를 그림. 높이는 map.css의 #mapdiv{height}. -->
   <div id="mapdiv"></div>

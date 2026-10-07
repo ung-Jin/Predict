@@ -6,7 +6,11 @@
  * 사용처: map-app.js가 두 함수를 호출해서 지도/범례 초기화. 지우면 지도 안 그려짐.
  * -----------------------------------------------------------------
  *
- * 시도별 색칠(전년동월대비 증감률 기준) + 범례 + 2개 지역 비교용 클릭 선택
+ * 시도별 색칠(증감률 기준, % 값이면 뭐든 상관없음 - 어떤 증감률을 넘길지는 호출하는 쪽
+ *   (map-app.js)이 결정함. [2026-10-07] 현재는 "8월 예측 증감률"을 넘겨받아 씀 - 처음엔
+ *   "전년동월대비(실측) 증감률"이었는데, 예측 대시보드 취지에 안 맞는다는 피드백으로 바뀜.
+ *   이 파일(map.js)은 어느 쪽이든 그대로 동작하므로 이 변경에 손댈 필요 없었음.) + 범례 +
+ *   2개 지역 비교용 클릭 선택
  * 사용 라이브러리: amCharts 5 (지도 전용) - am5geodata_southKoreaLow 에
  *   17개 시도 좌표가 이미 들어있어서 별도 GeoJSON을 구할 필요가 없음.
  *
@@ -61,7 +65,11 @@ function clamp01(t) {
  */
 function divergingHex(value, scaleMinDecrease, scaleMaxIncrease) {
   if (value == null) return '#e0e0e0'; // 데이터 없음: 회색
-  if (value === 0) return '#ffffff';   // 변화 없음: 흰색
+  // [2026-10-07] 변화 없음(0%)을 흰색으로 칠했더니 지도/카드 배경이 다 흰색이라 그 지역만
+  // 아예 안 보이는 문제가 있었음 - 옅은 하늘색으로 바꿔서 "변화가 거의 없다"는 느낌은
+  // 유지하면서도 눈에 보이게 함. 감소 쪽 그라데이션의 가장 연한 색(#cfe8ff)과 같은 값이라,
+  // 음수 쪽에서 0%로 다가갈 때 색이 끊기지 않고 자연스럽게 이어짐.
+  if (value === 0) return '#cfe8ff';
 
   if (value < 0) {
     // 감소 쪽: 하늘색(0%에 가까움) -> 파란색(감소폭 최대)
@@ -107,6 +115,19 @@ function initRegionMap(containerId, options) {
   am5.ready(function () {
     const root = am5.Root.new(containerId);
     root.setThemes([am5themes_Animated.new(root)]);
+
+    // [2026-10-07] 버그 수정: amCharts5는 기본적으로 #mapdiv의 ResizeObserver를 달아두고
+    // (root.autoResize = true, 기본값) 컨테이너 크기가 "조금이라도" 바뀔 때마다 줌/투영을
+    // 다시 계산함. 그런데 같은 지자체를 반복 클릭하면 그때마다 순위표↔분포스트립 교체,
+    // 도넛 재생성(own ResizeObserver 포함) 등으로 페이지 곳곳이 다시 레이아웃되고, 그 여파로
+    // #mapdiv 쪽에도 소수점 단위의 미세한 크기 변화가 생길 수 있음 - 실제로 지도 폭이
+    // 눈에 보이게 바뀌는 게 아니어도 ResizeObserver는 이 정도 변화에도 반응해서 재투영을
+    // 하고, 이게 클릭마다 누적되면서 "미세한 확대 틀어짐" -> (반복되면) "지도가 아예 안
+    // 보이는" 현상까지 이어진 것으로 보임.
+    // 원인이 된 자동 리사이즈 자체를 끄고, 실제로 지도 크기가 바뀔 수 있는 경우(창 크기
+    // 조절)에만 아래에서 직접 resize()를 호출하도록 바꿔서 - 지도 바깥 다른 영역이
+    // 아무리 다시 그려져도 지도는 더 이상 반응하지 않게 함.
+    root.autoResize = false;
 
     const chart = root.container.children.push(
       am5map.MapChart.new(root, {
@@ -343,6 +364,14 @@ function initRegionMap(containerId, options) {
         }
       }
     };
+
+    // autoResize를 꺼둔 대신, 창 크기가 실제로 바뀔 때만 수동으로 재계산하게 함.
+    // resize 이벤트는 드래그 중 아주 잦게 발생하므로 디바운스해서 마지막 한 번만 반영.
+    let resizeDebounceTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeDebounceTimer);
+      resizeDebounceTimer = setTimeout(() => root.resize(), 150);
+    });
   });
 
   return controls;
