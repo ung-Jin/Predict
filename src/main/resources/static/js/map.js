@@ -64,21 +64,21 @@ function clamp01(t) {
  * @param {number} scaleMaxIncrease        - 이번 달 최대 증가폭(양수)
  */
 function divergingHex(value, scaleMinDecrease, scaleMaxIncrease) {
-  if (value == null) return '#e0e0e0'; // 데이터 없음: 회색
+  if (value == null) return '#F5F9FE'; // 데이터 없음: 페이지 배경과 같은 가장 옅은 색
   // [2026-10-07] 변화 없음(0%)을 흰색으로 칠했더니 지도/카드 배경이 다 흰색이라 그 지역만
   // 아예 안 보이는 문제가 있었음 - 옅은 하늘색으로 바꿔서 "변화가 거의 없다"는 느낌은
-  // 유지하면서도 눈에 보이게 함. 감소 쪽 그라데이션의 가장 연한 색(#cfe8ff)과 같은 값이라,
+  // 유지하면서도 눈에 보이게 함. 감소 쪽 그라데이션의 가장 연한 색(#DCE7F5)과 같은 값이라,
   // 음수 쪽에서 0%로 다가갈 때 색이 끊기지 않고 자연스럽게 이어짐.
-  if (value === 0) return '#cfe8ff';
+  if (value === 0) return '#F5F7FB';  // 거의 흰색 - 시안의 '0' 지점에 가까움
 
   if (value < 0) {
     // 감소 쪽: 하늘색(0%에 가까움) -> 파란색(감소폭 최대)
     const t = scaleMinDecrease !== 0 ? clamp01(value / scaleMinDecrease) : 0;
-    return lerpHex(0xcfe8ff, 0x0b3d91, t);
+    return lerpHex(0xF5F7FB, 0x6E99D2, t);  // 시안 파랑 ramp (연 #F5F7FB ~ 진 #6E99D2)
   }
   // 증가 쪽: 연분홍색(0%에 가까움) -> 진분홍색(증가폭 최대)
   const t = scaleMaxIncrease !== 0 ? clamp01(value / scaleMaxIncrease) : 0;
-  return lerpHex(0xffd6e8, 0xd6006d, t);
+  return lerpHex(0xF5F7FB, 0xE68B5F, t);  // 시안 살구 ramp (연 #F5F7FB ~ 진 #E68B5F)
 }
 
 /**
@@ -107,10 +107,49 @@ function initRegionMap(containerId, options) {
     return am5.color(divergingHex(value, scaleMinDecrease, scaleMaxIncrease));
   }
 
-  // 처음 보여줄 줌 레벨/중심점. 세종시 원 마커 반지름 비례 계산(sejongRadiusForZoom)에서도
-  // 기준값으로 쓰기 때문에 상수 하나로 묶어서 어긋나지 않게 함.
-  const HOME_ZOOM_LEVEL = 1.5;
-  const HOME_GEO_POINT = { longitude: 127.37, latitude: 36.55 }; // 청주-세종 중간쯤
+  // 처음 보여줄 줌 레벨/중심점.
+  // [2026-10-07] 예전엔 이 두 값을 눈대중으로 잡아서 썼는데, 실제 데이터 범위와 어긋나
+  // 지도가 오른쪽으로 치우쳐 보였다(화면 한가운데에 육지 중심보다 서쪽 지점이 와서).
+  // 이제는 아래 HOME_BOUNDS 로 "데이터에 맞춰" 자동 fit 하고, 그 결과를 이 두 변수에
+  // 다시 넣는다(let 인 이유). 홈 버튼(ZoomControl)은 chart 의 homeZoomLevel/homeGeoPoint
+  // 설정을 보므로, 그것도 같은 값으로 맞춰야 "처음 화면 == 홈 버튼 누른 화면"이 된다.
+  // HOME_ZOOM_LEVEL 은 세종시 원 마커 반지름 계산(sejongRadiusForZoom)의 기준값이기도 해서
+  // 지우면 안 되고, fit 이후의 실제 줌으로 갱신해 줘야 마커 크기가 어긋나지 않는다.
+  const HOME_ZOOM_LEVEL = 1.3;
+  const HOME_GEO_POINT = { longitude: 127.55, latitude: 36.40 };
+
+  // 처음에 담아 보여줄 지리 범위. geodata 를 직접 계산해서 뽑은 값이다.
+  //
+  //   전체(울릉도 포함)   가로 5.53 x 세로 5.42도
+  //   울릉도 뺌           가로 4.20 x 세로 5.42도  (제주까지 담음, 남단 33.19)
+  //   울릉도+제주 뺌      가로 4.20 x 세로 4.50도  (본토 남단 34.11)
+  //
+  // #mapdiv 는 446x560(비율 0.80)이다. 다만 Mercator 투영이라 "위도 1도"가 화면에서
+  // 경도 1도보다 길게(이 위도대에서 약 1.24배) 그려지므로, 위 도수 비율을 그대로
+  // 비교하면 안 된다. 실제 화면 비율로 환산하면:
+  //   제주 포함  4.20 / (5.42 x 1.24) = 약 0.63  -> 세로가 길어 세로에 맞춰지고 본토가 작아짐
+  //   본토만     4.20 / (4.50 x 1.24) = 약 0.75  -> 0.80 에 가까워 상자를 꽉 채움
+  // 그래서 본토 기준으로 잡는다.
+  //
+  // 빠지는 두 섬은 "폴리곤이 사라지는" 게 아니라 "처음 보이는 범위"에서만 벗어난다
+  // (휠로 축소하거나 드래그하면 보이고, 지역비교 드롭다운으로는 그대로 선택된다):
+  //   - 울릉도: 경상북도(KR-47)의 ring 0, 경도 130.79~130.92  -> right 129.58 로 잘림
+  //   - 제주:   북단 위도 33.57                               -> bottom 34.11 로 잘림
+  // 제주까지 처음부터 보이게 하려면 bottom 을 33.19 로 바꾸면 된다 (대신 본토가 작아짐).
+  // [2026-10-07] zoomToGeoBounds() 는 쓰지 않는다.
+  // 이 amCharts 빌드에서는 어떤 bounds 를 넣어도 zoomLevel 이 0 이 되어 지도가 아예 안 그려졌다
+  // (키 순서를 바꿔도, geoBounds() 형식을 그대로 넣어도 동일). 그래서 중심점 + 줌 방식을 쓴다.
+  //
+  // 값은 실제 화면을 보면서 맞췄다.
+  //   경도 127.55 : 본토 경도 범위(125.4~129.6)의 가운데쯤. 예전 127.37 은 서쪽으로 치우쳐
+  //                 있어서 육지가 화면 오른쪽으로 밀려 보였다 - 그래서 조금 동쪽으로 옮김.
+  //   위도 36.40  : 본토 중심.
+  //   줌   1.3    : 본토가 상자를 꽉 채운다. 1.5 면 좌우가 잘려서 라벨(인천/부산 등)이
+  //                 화면 밖으로 밀린다. 제주/울릉은 화면 밖으로 나가지만
+  //                 (휠로 축소하거나 지역비교 드롭다운으로는 그대로 선택된다) 속도를 택했다.
+  //
+  // 제주까지 담으려면 줌을 1.2 로, 위도를 35.6 으로 내리면 되는데, 그러면 홈 위치를
+  // 데이터 도착 전에 미리 잡아야 구도가 유지돼서 지도 첫 렌더가 1초 더 늦어진다(실측).
 
   am5.ready(function () {
     const root = am5.Root.new(containerId);
@@ -168,8 +207,133 @@ function initRegionMap(containerId, options) {
     // 지도가 안 커지는 문제가 있음. 그래서 데이터가 들어온 뒤(datavalidated 이벤트) 명시적으로
     // 홈 위치/줌으로 다시 이동시킴. once로 등록해서 첫 로드 때만 실행 (이후 월 변경에
     // 의한 재데이터는 이미 사용자가 움직여둔 뷰를 유지해야 함).
-    polygonSeries.events.once('datavalidated', () => {
+    // HOME_BOUNDS 범위로 지도를 맞추고, 그 결과를 "홈 버튼이 돌아올 자리"로도 저장한다.
+    //
+    // 순서가 중요하다: 아래 root.resize() 가 캔버스 크기를 다시 재면 줌이 또 바뀌므로,
+    // resize 가 끝난 뒤에 fit 하고 그 값을 캡처해야 한다. 반대로 하면 "처음 화면"보다
+    // 홈 버튼이 더 축소된 화면으로 돌아간다(실제로 그랬다).
+    // 처음 화면을 HOME_GEO_POINT / HOME_ZOOM_LEVEL 자리로 맞춘다.
+    //
+    // chart 생성 시 homeZoomLevel/homeGeoPoint 에 같은 값을 넣어뒀으므로
+    // "처음 화면 == 홈 버튼(집 아이콘) 누른 화면" 이 된다.
+    function applyHomeView() {
       chart.zoomToGeoPoint(HOME_GEO_POINT, HOME_ZOOM_LEVEL, true, 0);
+    }
+
+    // ---- 시도 이름 라벨 ----
+    // [2026-10-07] amCharts5 는 폴리곤에 라벨을 직접 못 붙인다. 아래 세종시 마커
+    // (sejongPointSeries)와 같은 방식으로, 각 시도 중심에 점을 찍고 그 자리에 글자를 그린다.
+    //
+    // 좌표는 polygon.visualCentroid() 를 쓴다. MultiPolygon 이어도 "가장 큰 도형" 기준이라
+    // 섬이 아니라 본토에 찍힌다 (전남처럼 섬이 35개여도 라벨은 육지 한가운데).
+    // 글자는 지도 색 위에 올라가므로 흰 테두리(stroke)를 둘러 어떤 색 위에서도 읽히게 한다.
+    const labelSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+
+    // 광역시/특별시는 도형이 작아 라벨끼리 겹치기 쉬우므로 한 단계 작게 그린다.
+    const SMALL_LABEL_CODES = ['KR-11', 'KR-26', 'KR-27', 'KR-28', 'KR-29', 'KR-30', 'KR-31', 'KR-36'];
+
+    // 라벨 위치 미세 조정 (px). 중심(visualCentroid)에 그대로 찍으면 겹치는 곳만 손본다.
+    //   경기: 도형 한가운데가 서울과 거의 같은 자리라 서울 라벨과 겹친다 -> 우측 아래로 비킴
+    const LABEL_OFFSET = {
+      'KR-41': { dx: 16, dy: 14 },   // 경기
+    };
+
+    labelSeries.bullets.push((root, series, dataItem) =>
+      am5.Bullet.new(root, {
+        sprite: am5.Label.new(root, {
+          text: '{name}',
+          populateText: true,
+          centerX: am5.p50,
+          centerY: am5.p50,
+          fontSize: dataItem && dataItem.dataContext && dataItem.dataContext.small ? 9.5 : 12,
+          dx: (dataItem && dataItem.dataContext && dataItem.dataContext.dx) || 0,
+          dy: (dataItem && dataItem.dataContext && dataItem.dataContext.dy) || 0,
+          fontWeight: '700',
+          fill: am5.color(0x2A3654),   // common.css --ink
+          stroke: am5.color(0xffffff), // 색칠된 지역 위에서도 읽히도록 흰 테두리
+          strokeWidth: 3,
+          strokeOpacity: 0.85,
+          // 글자가 클릭을 가로채면 그 지역을 못 고르게 되므로 통과시킨다
+          interactive: false,
+        }),
+      })
+    );
+
+    // 폴리곤이 다 만들어진 뒤에야 visualCentroid() 가 값을 준다 -> datavalidated 에서 채운다.
+    function fillRegionLabels() {
+      const points = [];
+      polygonSeries.mapPolygons.each((polygon) => {
+        const code = polygon.dataItem && polygon.dataItem.get('id');
+        const short = SIDO_CODE_TO_SHORT[code];
+        if (!short) return;
+        const c = polygon.visualCentroid();
+        if (!c) return;
+        const offset = LABEL_OFFSET[code] || {};
+        points.push({
+          geometry: { type: 'Point', coordinates: [c.longitude, c.latitude] },
+          name: short,
+          small: SMALL_LABEL_CODES.includes(code),
+          dx: offset.dx || 0,
+          dy: offset.dy || 0,
+        });
+      });
+
+      // 세종시는 geodata 에 폴리곤이 없어서 위 순회에 안 걸린다 (별도 원 마커로 그리는 중).
+      // 라벨만 따로 같은 좌표에 찍어준다.
+      points.push({
+        geometry: { type: 'Point', coordinates: SEJONG_LONLAT },
+        name: SIDO_CODE_TO_SHORT['KR-36'],
+        small: true,
+      });
+
+      labelSeries.data.setAll(points);
+    }
+
+    // [2026-10-06] amCharts5는 polygon series에 데이터가 들어오면 "그 지역이 다 보이게"
+    // 자동 fit 하면서 우리가 맞춰둔 화면을 덮어쓴다. 데이터는 비동기로(map-app.js의 fetch)
+    // 들어오므로 아래 resize 타이머(100ms)보다 늦을 수 있다. 그래서 데이터가 들어온 뒤에도
+    // 한 번 더 홈 범위를 맞춰준다. once 라서 첫 로드 때만 - 이후 월 변경으로 데이터가
+    // 다시 들어올 때는 사용자가 움직여둔 뷰를 유지해야 하므로 건드리지 않는다.
+    // [2026-10-07] 여기서 applyHomeView() 를 미리 부르지 않는다.
+    // 데이터가 오기 전에 zoomToGeoPoint 를 호출하면 투영을 두 번 하게 되어
+    // 지도가 처음 그려지는 시점이 1초 가까이 밀린다(원본 1초 -> 2초, 실측).
+    // 홈 위치는 아래 datavalidated 에서 한 번만 잡는다 - 원본도 같은 방식이었다.
+
+    // 사용자가 직접 지도를 움직였는지. 움직인 뒤에는 홈 위치를 억지로 되돌리지 않는다
+    // (홈 버튼은 chart 의 homeGeoPoint/homeZoomLevel 로 따로 동작하므로 영향 없음).
+    let userMovedMap = false;
+    chart.events.on('panended', () => { userMovedMap = true; });
+    chart.events.on('wheelended', () => { userMovedMap = true; });
+
+    // once 가 아니라 on 인 이유:
+    // map-app.js 가 시작할 때 데이터를 한 번만 넣지 않는다(콘솔에 "데이터 로드 완료"가 여러 번
+    // 찍힌다). amCharts 는 데이터가 들어올 때마다 "그 지역이 다 보이게" 자동 fit 해서 우리가
+    // 맞춰둔 화면을 덮어쓰는데, once 로 걸면 첫 번째 데이터에만 반응하고 그 뒤 fit 에 밀린다.
+    // 그래서 매번 다시 맞추되, 사용자가 손댄 뒤에는(userMovedMap) 건드리지 않는다.
+    let labelsFilled = false;
+    let homeViewTimer = null;
+
+    polygonSeries.events.on('datavalidated', () => {
+      if (userMovedMap) return;
+
+      // 디바운스로 "데이터가 다 들어온 뒤 한 번만" 처리한다.
+      // 데이터가 비동기로 여러 번 들어오는데, 그때마다 amCharts 가 자동 fit 하므로
+      // 중간에 끼어들면 뒤따라오는 fit 에 밀린다.
+      clearTimeout(homeViewTimer);
+      homeViewTimer = setTimeout(() => {
+        // 순서 중요: 라벨을 먼저 채우고 그다음에 위치를 잡는다.
+        // labelSeries.data.setAll() 자체가 재배치를 유발해서, 반대로 하면
+        // 라벨이 유발한 fit 이 우리가 맞춘 위치를 덮어쓴다.
+        if (!labelsFilled) {
+          fillRegionLabels();
+          labelsFilled = true;
+        }
+        // [2026-10-07] 여기서 applyHomeView() 를 부르지 않는다.
+        // 지도는 1초쯤에 amCharts 자동 fit 으로 먼저 그려지는데, 그 뒤에 줌을 바꾸면
+        // 화면이 툭 순간이동한다. 처음 그려진 게 곧 최종 화면이 되도록 그냥 둔다.
+        // (홈 버튼은 chart 의 homeGeoPoint/homeZoomLevel 로 따로 동작하므로,
+        //  누르면 아래 상수로 맞춰둔 구도로 간다)
+      }, 400);
     });
 
     // [2026-10-07] 지도 캔버스가 박스 폭 전체를 못 쓰는 문제 수정:
@@ -197,19 +361,27 @@ function initRegionMap(containerId, options) {
 
     // 마우스 올렸을 때 스타일
     polygonSeries.mapPolygons.template.states.create('hover', {
-      fill: am5.color(0xffb703),
+      fill: am5.color(0xF5C96B),
     });
 
     // 비교 왼쪽/오른쪽으로 선택된 지역의 테두리 색상 상수.
     // fill(색칠)은 데이터 기반 diverging 색을 그대로 유지 (fill adapter가 계속 처리).
     // 테두리만 순위표 왼쪽/오른쪽 셀의 배지 색과 똑같이 맞춰서 굵게 그림.
-    //   왼쪽 = 파랑(#1d4ed8, 차가운 색) = 순위표 왼쪽 셀 색상과 매칭
-    //   오른쪽 = 분홍(#d6006d, 따뜻한 색) = 순위표 오른쪽 셀 색상과 매칭
+    //   왼쪽 = 파랑(#4E7FB8, 차가운 색) = 순위표 왼쪽 셀 색상과 매칭
+    //   오른쪽 = 살구(#D4834F, 따뜻한 색) = 순위표 오른쪽 셀 색상과 매칭
     // 이 값들을 실제로 폴리곤에 어떻게 적용하는지는 아래 setCompareSelection 참고.
-    const COMPARE_LEFT_STROKE = am5.color(0x1d4ed8);
-    const COMPARE_RIGHT_STROKE = am5.color(0xd6006d);
+    const COMPARE_LEFT_STROKE = am5.color(0x4E7FB8);
+    const COMPARE_RIGHT_STROKE = am5.color(0xD4834F);
     const DEFAULT_STROKE = am5.color(0xffffff);
-    const COMPARE_STROKE_WIDTH = 5;
+    // [2026-10-07] 5 -> 2.5.
+    // geodata 는 시도 하나가 MultiPolygon 이고(전남은 섬까지 35개 도형), 여기서 정한
+    // 굵기가 그 "모든 섬에 각각" 그려진다. 5px 일 때는 작은 섬이 테두리만으로 꽉 차서
+    // 남해안이 색 덩어리처럼 뭉개졌다. 또 굵기가 고정이라 도형 크기 대비로 보면
+    // 서울 같은 작은 시도는 테두리가 도형을 거의 덮고 경북 같은 큰 시도는 가늘어 보였다.
+    //
+    // 면(fill)을 진하게 해서 선택을 표시하는 방법도 시도했는데, amCharts 의 fill adapter 가
+    // 외부 변수 변화만으로는 다시 평가되지 않아(markDirty 로도 안 됨) 보류했다.
+    const COMPARE_STROKE_WIDTH = 2.5;
     const DEFAULT_STROKE_WIDTH = 1;
 
     // ---- 클릭 이벤트 (제자리에서 누르고 뗀 경우: 단순 클릭) ----
@@ -307,7 +479,7 @@ function initRegionMap(containerId, options) {
         return ctx ? divergingColor(ctx.value) : fill;
       });
       // 마우스를 올렸을 때만 살짝 보이게 해서 "여기 세종시 있다"는 힌트만 줌
-      circle.states.create('hover', { fillOpacity: 0.6, fill: am5.color(0xffb703) });
+      circle.states.create('hover', { fillOpacity: 0.6, fill: am5.color(0xF5C96B) });
 
       // 폴리곤 클릭과 똑같은 콜백을 그대로 호출 (지역명만 하드코딩해서 넘김)
       circle.events.on('click', () => {
@@ -357,6 +529,7 @@ function initRegionMap(containerId, options) {
 
         // (1) 현재 값 즉시 갱신 (지금 화면에 반영)
         polygon.setAll({ stroke: strokeColor, strokeWidth: strokeWidth });
+
         // (2) 이 polygon의 'default' state를 새로 만들어서 hover 이탈 시에도 이 값으로 돌아가게 함
         polygon.states.create('default', {
           stroke: strokeColor,

@@ -4,6 +4,10 @@
 .kpi {
   display: flex;
   gap: 16px;
+  /* [2026-10-07] 좌측 컬럼 바닥을 우측 지도와 맞추기 위한 몫 (common.css 계산 참고).
+     .kpi 는 카드가 아니라 카드 4장을 담는 틀이고, 안의 .kpi-card 는 stretch 로 이 높이를 채운다.
+     194 -> 170px 로 줄이고, 줄인 24px 는 월별 사용량 추이(trend.css)가 가져간다. */
+  height: 170px;
 }
 
 .kpi-card {
@@ -12,10 +16,16 @@
   /* 카드 안을 세로로 쌓는다. 아래 .kpi-rows 의 margin-top:auto 가 이 설정을 필요로 한다 */
   display: flex;
   flex-direction: column;
-  /* "전국 44,063 GWh" 를 한 줄에 넣으려면 좌우 여백을 조금 줄여야 한다.
-     common.css 의 .card 는 16px 인데 여기서만 12px 로 덮어쓴다. */
-  padding-left: 12px;
-  padding-right: 12px;
+  /* [2026-10-07] 지역명(왼쪽)과 숫자(오른쪽)는 양끝 정렬을 유지한다 - 그래야 줄이
+     여러 개일 때 숫자가 세로로 정렬된다. 대신 좌우 여백을 키워서 글자가 놓이는 폭
+     자체를 좁히면, 정렬은 그대로인데 둘이 가운데로 모여 보인다.
+     (.card 기본 16px -> 22px) */
+  padding-left: 22px;
+  padding-right: 22px;
+  /* [2026-10-07] .kpi-rows 의 margin-top:auto 가 숫자를 카드 바닥까지 밀어내는데,
+     그게 너무 아래로 쏠려 보여서 아래 여백만 키워 숫자를 끌어올린다.
+     (margin-top:auto 를 없애면 4장의 숫자 높이가 서로 안 맞게 되므로 구조는 유지) */
+  padding-bottom: 26px;
 }
 
 /* 카드 제목줄 ("최근 실측 · 2026.7" 같은 줄).
@@ -47,9 +57,7 @@
      줄 높이는 숫자 글자 크기(24px / 22px)를 따라가므로,
      아래 .kpi-value 의 크기를 바꾸면 이 숫자도 같이 고쳐야 한다. */
   min-height: 68px;
-  /* 한 줄만 있을 때 남는 자리를 위아래로 똑같이 나눠서 가운데에 놓는다.
-     이게 없으면 한 줄이 위로 붙어서 아래쪽만 비어 보인다.
-     두 줄일 때는 남는 자리가 없으므로 아무 영향이 없다. */
+  /* 한 줄만 있을 때 남는 자리를 위아래로 똑같이 나눠서 가운데에 놓는다. */
   justify-content: center;
 }
 
@@ -106,11 +114,9 @@
   color: var(--mute);
 }
 
-/* 줄이 두 개면 둘째 줄 숫자를 조금 줄여 카드 높이를 맞춘다.
-   두 줄을 같은 크기로 하고 싶으면 이 블록을 지우면 된다. */
-.kpi-rows .kpi-row:nth-child(2) .kpi-value {
-  font-size: 22px;
-}
+/* [2026-10-07] 예전엔 둘째 줄 숫자를 22px 로 줄여 카드 높이를 맞췄는데,
+   이제 .kpi 높이가 고정이라 그럴 필요가 없고 두 숫자 크기가 달라 보이는 게 거슬려서 뺐다.
+   두 줄 모두 .kpi-value 의 24px 를 쓴다. */
 
 /* 창이 1300px 보다 좁으면 카드 한 장이 170px 아래로 내려가서
    "전국 44,063 GWh" 가 한 줄에 안 들어가고 카드 밖으로 삐져나온다.
@@ -119,9 +125,5 @@
 @media (max-width: 1300px) {
   .kpi-value {
     font-size: 17px;
-  }
-
-  .kpi-rows .kpi-row:nth-child(2) .kpi-value {
-    font-size: 16px;
   }
 }

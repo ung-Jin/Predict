@@ -26,7 +26,8 @@
 /* ---- 선택 지역 칩 (fragments/chips.html) ----
    한 줄짜리 얇은 카드 안에 select 2개를 나란히. 높이는 흔한 폼 인풋(36px)에 맞춤. */
 .chips {
-  padding: 10px 16px;
+  /* [2026-10-07] 셀렉트가 커 보여서 카드 여백부터 줄임 */
+  padding: 8px 14px;
 }
 
 .chip-row {
@@ -37,7 +38,7 @@
 
 .chip-label {
   flex: 0 0 auto;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: bold;
   color: var(--ink);
   white-space: nowrap;
@@ -46,9 +47,13 @@
 /* select는 기본 글꼴이 브라우저 글꼴이라 font-family를 명시적으로 상속시켜야
    나머지 카드들과 글꼴이 같아 보임. 펼침 화살표는 브라우저 기본 모양 그대로 사용. */
 .chip-input {
-  flex: 1;
-  height: 36px;
-  padding: 0 10px;
+  /* [2026-10-07] flex:1 이면 카드 끝까지 늘어나서 과하게 컸다. 높이도 36 -> 30px.
+     flex-shrink 도 0 으로 둬서 두 드롭다운이 "항상 정확히 같은 폭"이 되게 한다
+     (0 1 220px 이면 공간이 빡빡할 때 내용 길이에 따라 서로 다르게 줄어든다). */
+  flex: 0 0 220px;
+  width: 220px;
+  height: 30px;
+  padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   font-family: inherit;
@@ -60,15 +65,50 @@
 }
 
 /* 아직 지역을 안 고른 상태 - 예전 placeholder처럼 흐린 글씨로 (chip.js가 토글) */
+/* [2026-10-07] 선택 초기화 링크. 칩 줄 가장 오른쪽 끝으로 밀어둔다.
+   동작은 사이드바 로고(common.css .sidebar-logo)와 똑같다 - sessionStorage 를
+   비우고 /dashboard 로 다시 들어가므로 지도/도넛/순위표/KPI 가 전부 전국 상태로 그려진다.
+   톤은 detail.css 의 .df-csv 버튼과 맞췄다. */
+.chip-reset {
+  margin-left: auto;
+  flex: 0 0 auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--mute);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.chip-reset:hover {
+  border-color: var(--mute);
+  color: var(--ink);
+}
+
 .chip-input.is-empty {
   color: var(--mute);
 }
 
 /* ---- 지도 카드 자체 ---- */
+/* [2026-10-07] 폭을 480px로 고정 (클로드 디자인 시안 Main 아트보드와 동일).
+   예전엔 폭 규칙이 없어서 .content(flex) 안에서 "내용 크기"대로 잡혔다.
+   그래서 지도 하단이 '전국 증감률 분포 스트립' <-> '전국 내 위치 순위표'로 바뀔 때마다
+   두 조각의 내용 폭 차이만큼 카드 폭이 변하고, 그 차이를 .left(flex:1)가 흡수해서
+   좌측 대시보드 전체가 가로로 밀렸다. 폭을 고정하면 지도도 커지고 흔들림도 사라진다. */
+.map {
+  flex: 0 0 480px;
+  box-sizing: border-box;
+}
+
 .map-title {
   font-size: 14px;
   font-weight: bold;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 8px 0;
 }
 
@@ -87,15 +127,17 @@
   height: 14px;
   border-radius: 4px;
   /* [2026-10-07] 가운데(0%)가 흰색이면 카드 배경과 겹쳐 안 보여서, map.js의 divergingHex()와
-     맞춰 옅은 하늘색(#cfe8ff)으로 바꿈 - 실제 0% 폴리곤 색도 더 이상 흰색이 아님. */
-  background: linear-gradient(to right, #0b3d91, #cfe8ff, #ffd6e8, #d6006d);
+     맞춰 옅은 파랑(#DCE7F5)으로 바꿈 - 실제 0% 폴리곤 색도 더 이상 흰색이 아님.
+     [2026-10-07] 진파랑->핫핑크 램프를 시안 톤으로 교정.
+     [2026-10-07] 파스텔 톤 더 연하게: 양 끝을 시안 ramp 양 끝과 맞춤. */
+  background: linear-gradient(to right, #6E99D2, #F5F7FB, #F5F7FB, #E68B5F);
 }
 
 .diverging-labels {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: #555;
+  color: var(--mute);
   margin-top: 4px;
 }
 
@@ -104,7 +146,7 @@
 .map-compare-title {
   font-size: 13px;
   font-weight: bold;
-  color: #333;
+  color: var(--ink);
   margin: 10px 0 5px 0;
 }
 
@@ -112,7 +154,7 @@
   display: grid;
   grid-template-columns: 1fr 0.7fr 1fr;
   gap: 0;
-  border: 1px solid #eee;
+  border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
   width: 100%;
@@ -120,7 +162,7 @@
 
 .compare-col,
 .compare-mid {
-  background: #fafafa;
+  background: var(--bg);
 }
 
 .compare-col {
@@ -128,8 +170,8 @@
 }
 
 .compare-mid {
-  border-left: 1px solid #eee;
-  border-right: 1px solid #eee;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
 }
 
 .compare-col-header,
@@ -146,15 +188,15 @@
 }
 
 .compare-col-header.side-left {
-  color: #1d4ed8;
+  color: #4E7FB8;
 }
 
 .compare-col-header.side-right {
-  color: #d6006d;
+  color: #D4834F;
 }
 
 .compare-mid-header {
-  color: #999;
+  color: #A3B1C6;
   font-weight: normal;
   font-size: 11px;
 }
@@ -167,14 +209,14 @@
   justify-content: center;
   min-height: 26px;
   padding: 2px 2px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--line);
   text-align: center;
   line-height: 1.25;
 }
 
 .compare-mid-cell {
   font-size: 10.5px;
-  color: #666;
+  color: var(--mute);
 }
 
 .compare-col-cell.is-empty {
@@ -187,33 +229,33 @@
   font-size: 12px;
   padding: 1px 7px;
   border-radius: 9px;
-  background: #f0f0f0;
+  background: #EAF2FC;
 }
 
 .compare-col[data-slot='left'] .rank-badge {
-  background: #e3ebff;
-  color: #1d4ed8;
+  background: #EAF2FC;
+  color: #4E7FB8;
 }
 
 .compare-col[data-slot='right'] .rank-badge {
-  background: #ffe3f0;
-  color: #d6006d;
+  background: #FDF0E6;
+  color: #D4834F;
 }
 
 .rank-badge-empty {
-  background: #eee;
-  color: #aaa;
+  background: var(--line);
+  color: #A3B1C6;
 }
 
 .rank-value {
   font-size: 10.5px;
-  color: #555;
+  color: var(--mute);
   margin-top: 2px;
 }
 
 .compare-drop-hint {
   font-size: 10.5px;
-  color: #aaa;
+  color: #A3B1C6;
   text-align: center;
   margin: 5px 0 0 0;
 }
@@ -249,15 +291,15 @@
   justify-content: space-between;
   gap: 8px;
   font-size: 11px;
-  color: #666;
+  color: var(--mute);
   margin-bottom: 6px;
 }
 
-.strip-down { color: #1d4ed8; }  /* 감소 = 지도의 파란색 계열과 통일 */
-.strip-up { color: #d6006d; }    /* 증가 = 지도의 분홍색 계열과 통일 */
+.strip-down { color: #4E7FB8; }  /* 감소 = 지도의 파란색 계열과 통일 */
+.strip-up { color: #D4834F; }    /* 증가 = 지도의 살구색 계열과 통일 */
 
 .strip-hint {
-  color: #aaa;
+  color: #A3B1C6;
   white-space: nowrap;
 }
 
@@ -330,12 +372,12 @@
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  color: #aab4c8;
+  color: #A3B1C6;
 }
 
 .strip-empty {
   font-size: 11px;
-  color: #aaa;
+  color: #A3B1C6;
   text-align: center;
   margin: 12px 0;
 }
@@ -346,43 +388,51 @@
    카드 폭은 50% → 30%로 줄여서 도넛에 공간 몰아줌. flex 기본 min-width:auto로
    안쪽 도넛을 따라 커지려는 걸 min-width:0으로 막음. */
 .donut {
-  flex: 0 0 30%;
-  max-width: 30%;
+  /* [2026-10-07] 30% -> 38%. 지도 카드를 480px 로 고정하면서 .left 가 좁아졌고,
+     그 여파로 .row 의 30% 였던 이 카드가 190px 까지 줄어 캔버스에 44px 밖에 안 남았다
+     (범례 66px + 좌우 여백을 빼고 나면). 도넛이 점처럼 작아져서 폭을 늘린다. */
+  flex: 0 0 38%;
+  max-width: 38%;
   min-width: 0;
   box-sizing: border-box;
   /* 안쪽 캔버스가 조금이라도 삐져나오면 카드 밖으로 새지 않게 잘라줌 (도넛이 카드 밖으로
      보이던 문제 방지). 카드 자체 폭은 위 flex/max-width로 이미 고정돼 있음. */
   overflow: hidden;
   /* [2026-10-06] 옆 카드(forecast3/rank)랑 높이를 맞추려고 flex 기본값(stretch)에 맡겼었는데,
-     그러면 도넛 카드가 옆의 긴 카드(순위 8개짜리 rank 등) 높이에 그대로 끌려 올라가면서
-     도넛·범례는 그대로 작은 크기라 카드 아래쪽에 큰 빈 여백이 남는 문제가 있었음
+     도넛·범례는 작은 크기라 카드 아래쪽에 큰 빈 여백이 남는 문제가 있었음
      (도넛 폭이 카드 폭의 30%로 이미 좁게 고정돼 있어서, 세로 공간이 아무리 남아도
      도넛을 그만큼 키울 수 없음 - 가로 폭이 먼저 한계에 걸림).
-     [2026-10-07] 그래서 다시 align-self:center로 바꿔서, 옆 카드 높이를 억지로 따라가지
-     않고 "제목 + 도넛/범례"만큼의 자기 내용 높이로 자연스럽게 잡히게 하고, 대신 .row 안에서
-     세로 중앙에 놓이게 해서(= 다른 카드들과 위아래로 어긋나 보이지 않게) 예전에 되돌렸던
-     "옆 카드랑 높이 안 맞아 보이는" 문제도 같이 피함. */
+     [2026-10-07] align-self:center 로 피해 봤지만, 그러면 카드 테두리 자체가
+     옆 카드보다 짧아서 세 카드의 위/아래 선이 안 맞는 게 더 거슬렸음.
+     결론: 높이를 못 박지 않고 .row 의 stretch 에 맡겨 옆 카드(rank/forecast3)와
+     테두리 높이를 맞추고(= 세 카드의 위/아래 선이 정렬됨), 남는 세로 공간은
+     아래 .donut-compact-row 가 flex:1 로 받아 안쪽 내용을 세로 중앙에 놓는다.
+     빈 여백이 위아래로 반씩 나뉘어 덜 어색하다. */
   display: flex;
   flex-direction: column;
-  align-self: center;
+  height: var(--mid-card-height);
 }
 
 /* 헤더는 3분할 grid로 잡아서, 카드 폭과 무관하게 제목은 카드 정중앙,
    기준월은 카드 오른쪽 끝에 정렬되도록 함.
    [왼쪽 spacer 1fr | 가운데 제목 auto | 오른쪽 기준월 1fr]  */
+/* [2026-10-07] 3열 grid(spacer | 제목 | 기준월)에서 세로 2줄로 바꿈.
+   카드가 좁아지면서 제목과 기준월이 한 줄에 못 들어가 기준월 글자가 세로로
+   쪼개지고 제목 영역이 65px 까지 부풀었다. 세로로 쌓으면 34px 로 줄고
+   그만큼 도넛에 세로 공간이 더 간다. */
 .donut-title {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   font-size: 14px;
   font-weight: bold;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 6px 0;
 }
 
 .donut-title-spacer {
-  /* 왼쪽 1fr 자리 채우기용 빈 span (grid balance) */
+  display: none;   /* 세로 배치로 바뀌어 더 이상 필요 없음 */
 }
 
 .donut-title-text {
@@ -391,6 +441,7 @@
 
 /* 카드 헤더 오른쪽 끝에 "· 2026년 7월 기준" 형태로 붙는 작은 회색 텍스트. */
 .donut-ref-month {
+  white-space: nowrap;
   font-size: 10.5px;
   color: #888;
   font-weight: normal;
@@ -406,13 +457,19 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* [2026-10-07] 카드가 .row 높이만큼 늘어나면서 남는 세로 공간을
+     여기서 받아 안쪽(도넛 + 범례)을 세로 중앙에 놓는다. */
+  flex: 1;
+  min-height: 0;
 }
 
 /* [2026-09-30] 도넛 1개(전국평균)만 떠 있을 때도 2개 떠 있을 때와 똑같은 크기가 되게
    max-width로 캡을 걸음. "범례(56px) + 간격(12px)을 뺀 나머지를 둘이 반씩 나눌 때의 폭" */
 .donut-compact {
   flex: 1 1 0;
-  max-width: calc((100% - 56px - 12px) / 2);
+  /* [2026-10-07] 범례 폭을 56 -> 66px 로 키웠으므로 그 값도 같이 반영.
+     /2 는 "도넛 2개가 나란히 설 때" 서로 폭을 반씩 나눠 갖게 하는 상한이다. */
+  max-width: calc((100% - 66px - 12px) / 2);
   min-width: 0; /* flex 기본 min-width:auto가 안쪽 캔버스를 따라 커지는 것 방지 */
   min-height: 0;
   display: flex;
@@ -440,7 +497,7 @@
    더 넓은 폭을 몰아줌. */
 .donut-legend {
   flex: 0 0 auto;
-  width: 56px;
+  width: 66px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -448,9 +505,37 @@
   /* [2026-10-06] 카드 높이가 늘어난 만큼 범례 항목 세로 간격도 조금 더 벌려서 숨통 틔워줌 */
   gap: 11px;
   margin: 0;
-  font-size: 9.5px;
-  color: #444;
+  /* [2026-10-07] 9.5px 는 너무 작아서 11px 로. 폰트가 커진 만큼 폭도 56 -> 66px */
+  font-size: 11px;
+  color: var(--mute);
   line-height: 1.2;
+}
+
+/* 도넛이 1개만 보일 때(전국 평균이거나 한 곳만 고른 상태)는 옆에 자리가 남으므로
+   범례를 오른쪽으로 더 띄우고 글자도 한 단계 키운다.
+   오른쪽 도넛 칸에 붙는 is-empty 클래스를 :has() 로 읽어서 분기하므로 JS 수정이 없다.
+   도넛 2개일 때는 폭이 빡빡해서 이 블록이 적용되지 않는다(= 글자만 위의 11px). */
+.donut-compact-row:has(.donut-compact.is-empty) .donut-legend {
+  font-size: 11.5px;
+}
+
+/* [2026-10-07] 도넛이 하나일 때는 justify-content:center 때문에 둘이 가운데 뭉치고
+   좌우에 29px씩 여백이 남았다. space-between 으로 바깥으로 벌린다.
+   space-between 에서는 이 padding 이 "바깥 여백"이자 "가운데 간격을 줄이는 손잡이"다
+   (바깥을 키운 만큼 가운데가 좁아진다). 12px 일 땐 가운데가 53px 로 너무 벌어져서 22px 로.
+   결과: 좌우 22px / 도넛-범례 사이 33px. */
+.donut-compact-row:has(.donut-compact.is-empty) {
+  justify-content: space-between;
+  padding: 0 22px;
+}
+
+/* [2026-10-07] 도넛이 하나만 보일 때(전국 평균이거나 한 곳만 선택)는 위의 /2 상한이
+   쓸데없이 폭을 절반으로 깎아서 도넛이 점처럼 작아진다(206px 카드에서 69px).
+   이때는 범례 앞의 남는 폭을 쓰게 해준다. 66px(범례) + 14px(margin-left) + 6px(gap). */
+.donut-compact-row:has(.donut-compact.is-empty) .donut-compact:not(.is-empty) {
+  /* [2026-10-07] calc 만 쓰면 넓은 화면에서 247px 까지 커져 과했다.
+     min() 으로 190px 상한을 더해, 좁을 때는 calc 가/넓을 때는 190px 가 걸리게 한다. */
+  max-width: min(calc(100% - 86px), 190px);
 }
 
 .donut-legend-item {

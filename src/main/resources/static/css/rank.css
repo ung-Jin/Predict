@@ -2,19 +2,19 @@
 
 /* 증감 색은 2번 지도와 같은 규칙을 쓴다.
    막대 "길이"가 변화폭, 막대 "색"이 증가/감소 방향을 나타낸다. */
+/* [2026-10-07] 시안 톤으로 교정: 분홍/진파랑 -> 살구(--b)/파랑(--a).
+   상세 페이지(detail-charts.js)가 쓰는 색과 같은 값이라 두 페이지 톤이 맞는다. */
 :root {
-  --rank-up: #D6006D;     /* 증가 (분홍) */
-  --rank-down: #3F72B5;   /* 감소 (파랑) */
-  --rank-zero: #C6D2E3;   /* 변화 없음 (중립 회색) */
+  --rank-up: #F2A97E;     /* 증가 (살구) = common.css --b */
+  --rank-down: #6F9BD6;   /* 감소 (파랑) = common.css --a */
+  --rank-zero: #DCE7F5;   /* 변화 없음 (연한 파랑 중립) */
 }
 
 .rank {
   flex: 1;
   min-width: 0;
-  /* 옆자리에 들어오는 "앞으로 3개월 예측" 카드와 높이를 맞춘다 (dashboard.css 참고) */
-  /* common.css 의 .card 는 안쪽 여백이 16px 인데, 기본 계산 방식에서는
-     height 가 "여백을 뺀 안쪽 높이"를 뜻해서 카드가 212+32+2 = 246px 이 된다.
-     border-box 로 바꾸면 height 가 "테두리까지 포함한 전체 높이"가 된다. */
+  /* 옆자리에 들어오는 "앞으로 3개월 예측" 카드와 높이를 맞춘다 (dashboard.css 참고).
+     border-box 라서 height 가 테두리까지 포함한 전체 높이가 된다. */
   box-sizing: border-box;
   height: var(--mid-card-height);
 }
@@ -24,7 +24,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .rank-title {
@@ -51,16 +51,18 @@
 .rank-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  /* [2026-10-07] 전국(선택 0개)일 때 한 칸에 5줄만 들어가서 카드 아래가 75px 비었다.
+     줄 간격을 벌려(8 -> 19px) 그 공간을 채운다. */
+  gap: 19px;
 }
 
 /* 칸 머리말 ("● 증가 지역") */
 .rank-group-title {
-  margin: 0 0 2px;
+  margin: 0 0 6px;
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -68,8 +70,8 @@
 /* 머리말 앞의 점. 요약 카드 점(.kpi-dot)과 같은 9px.
    색은 rank.js 가 넣는다 (증가=분홍, 감소=파랑). */
 .rank-group-dot {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -78,13 +80,13 @@
    gap 이 10px 인 이유 : 선 끝의 점이 선 밖으로 4.5px 나오므로 값과 부딪히지 않게 띄운다. */
 .rank-row {
   display: grid;
-  grid-template-columns: 30px 1fr 42px;
+  grid-template-columns: 36px 1fr 48px;
   align-items: center;
   gap: 10px;
 }
 
 .rank-name {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--mute);
   text-align: right;
   white-space: nowrap;
@@ -93,7 +95,7 @@
 /* 선이 놓이는 칸. 점을 선 끝에 붙이려고 기준(position:relative)만 잡아둔다 */
 .rank-bar {
   position: relative;
-  height: 9px;
+  height: 11px;
 }
 
 /* 값의 크기만큼 늘어나는 선. 길이(width)와 색(background)은 rank.js 가 넣는다.
@@ -102,9 +104,9 @@
   display: block;
   position: absolute;
   top: 50%;
-  margin-top: -1px;
-  height: 2px;
-  border-radius: 1px;
+  margin-top: -1.5px;
+  height: 3px;
+  border-radius: 1.5px;
 }
 
 /* 선 끝에 찍는 점.
@@ -114,16 +116,16 @@
 .rank-line::after {
   content: '';
   position: absolute;
-  right: -4.5px;
-  top: -3.5px;
-  width: 9px;
-  height: 9px;
+  right: -5.5px;
+  top: -4px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: inherit;
 }
 
 .rank-value {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   text-align: right;
   white-space: nowrap;
