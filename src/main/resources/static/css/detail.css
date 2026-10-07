@@ -254,14 +254,15 @@
 .dt-tbl {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    /* [2026-10-07] 가시성을 위해 12 -> 14px */
+    font-size: 14px;
     font-variant-numeric: tabular-nums;   /* 숫자 자릿수 고정 (표가 흔들리지 않음) */
 }
 .dt-tbl thead th {
     text-align: right;
     font-weight: 500;
     color: var(--mute);
-    font-size: 11px;
+    font-size: 13px;
     padding: 6px 6px 8px;
     border-bottom: 1px solid var(--line);
     white-space: nowrap;
@@ -271,7 +272,7 @@
     display: block;
     font-weight: 400;
     color: var(--detail-sub);
-    font-size: 10px;
+    font-size: 12px;
     margin-top: 2px;
 }
 .dt-col-sido { width: 24%; }
@@ -282,7 +283,8 @@
 .dt-col-mae  { width: 11%; }
 
 .dt-tbl tbody td {
-    padding: 7px 6px;
+    /* [2026-10-07] 글자가 13px로 커진 만큼 행 높이도 살짝 (7 -> 8px) */
+    padding: 8px 6px;
     border-bottom: 1px solid var(--line);
     vertical-align: middle;
     text-align: right;
@@ -314,7 +316,7 @@
 }
 .dt-badge-a { background: var(--a); }
 .dt-badge-b { background: var(--b); }
-.dt-name { font-weight: 500; color: var(--ink); font-size: 12px; }
+.dt-name { font-weight: 500; color: var(--ink); font-size: 14px; }
 
 /* 8월 예측 값 + 스파크 바 (상대적 크기 시각화) */
 .dt-fc-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
@@ -340,7 +342,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     justify-content: flex-end;
 }
@@ -362,6 +364,16 @@
     background: var(--detail-track);
     border-radius: 2px;
     position: relative;
+    /* [2026-10-07] 이게 없으면 옆 숫자 글자 폭(12.5% 5자 vs 9.8% 4자)에 따라
+       트랙 자체가 눌려서 행마다 바 길이가 달라 보였다. 채워진 길이는
+       detail.js 가 인라인 width:% 로 넣는 "데이터 값"이라 그대로 둔다. */
+    flex-shrink: 0;
+}
+
+/* 숫자 칸 폭을 고정해서 바의 왼쪽 끝이 행마다 세로로 정렬되게 한다 */
+.dt-mape-cell > span {
+    min-width: 48px;
+    text-align: right;
 }
 .dt-mape-bar > i {
     position: absolute; left: 0; top: 0; bottom: 0;
@@ -369,7 +381,7 @@
 }
 
 .dt-foot {
-    font-size: 11px;
+    font-size: 13px;
     color: var(--detail-sub);
     padding: 8px 4px 0;
     line-height: 1.5;

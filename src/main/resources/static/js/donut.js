@@ -33,12 +33,14 @@
 
 // 화면에 개별로 표시할 카테고리의 색상 매핑 (Chart.js 조각/범례가 이 순서로 나옴).
 // "기타"는 위 표시 규칙대로 아래 MINOR_CATEGORIES를 합친 것.
+// [2026-10-07] 화면 전체를 화이트+파스텔 톤으로 맞추면서 선명한 원색을 톤다운함.
+// 채도만 낮추고 명도 차이는 유지해서, 색상(hue)만으로 구분하지 않아도 되게 했다.
 const CONTRACT_COLOR_MAP = {
-  '주택용': '#e63946', // 빨강 - 가정 생활 패턴에 직접 좌우됨 (사람 영향 큼)
-  '일반용': '#f77f00', // 주황 - 영업시간/사람 활동에 좌우됨 (사람 영향 큼)
-  '산업용': '#219ebc', // 파랑 - 공장 설비 가동이 주 원인 (사람 영향 적음)
-  '농사용': '#2a9d8f', // 청록 - 관수/시설재배 자동화 위주 (사람 영향 적음)
-  '기타':   '#9aa0a6', // 회색 - 교육용/가로등/심야를 합친 소계
+  '주택용': '#D98C94', // 연한 로즈 - 가정 생활 패턴에 직접 좌우됨 (사람 영향 큼)
+  '일반용': '#EFA765', // 살구 - 영업시간/사람 활동에 좌우됨 (사람 영향 큼)
+  '산업용': '#7FB0C4', // 연한 청 - 공장 설비 가동이 주 원인 (사람 영향 적음)
+  '농사용': '#7FBFB4', // 연한 청록 - 관수/시설재배 자동화 위주 (사람 영향 적음)
+  '기타':   '#B9C2CF', // 연회청 - 교육용/가로등/심야를 합친 소계
 };
 
 // "기타"로 합칠 카테고리들. 각각의 원본 색은 이제 화면에 안 쓰이지만 문서화 차원에서 남겨둠:
@@ -105,7 +107,7 @@ const centerTextPlugin = {
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = pluginOptions.color || '#333333';
+    ctx.fillStyle = pluginOptions.color || '#2A3654';   // common.css --ink
 
     let fontSize = 13;
     ctx.font = `bold ${fontSize}px sans-serif`;
@@ -154,7 +156,7 @@ function keepCanvasWrapSquare(wrapEl) {
  * @param {string} [titleText] - 도넛 정중앙에 표시할 캡션 (지역명 또는 "전국 평균").
  *                                centerTextPlugin이 캔버스에 직접 그려 넣음.
  * @param {string} [centerColor] - 중앙 캡션 글자색. 지도 테두리/순위표 배지 색과 맞춰서
- *                                 왼쪽=파랑(#1d4ed8), 오른쪽=분홍(#d6006d), 전국평균=회색(#666666) 사용.
+ *                                 왼쪽=파랑(#6F9BD6), 오른쪽=살구(#F2A97E), 전국평균=초록(#6FBF9F) 사용.
  */
 function renderContractDonut(containerId, contractObj, titleText, centerColor = '#333333') {
   const canvas = document.getElementById(containerId);

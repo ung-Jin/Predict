@@ -35,6 +35,28 @@ const SIDO_CODE_TO_NAME = {
   'KR-49': '제주특별자치도',
 };
 
+// [2026-10-07] 지도 위에 찍을 짧은 이름. 전체 이름은 작은 시도(서울/대전 등) 도형보다
+// 길어서 지도를 덮어버린다. 표기는 DB 의 region.short_name 과 같게 맞춤.
+const SIDO_CODE_TO_SHORT = {
+  'KR-11': '서울',
+  'KR-26': '부산',
+  'KR-27': '대구',
+  'KR-28': '인천',
+  'KR-29': '광주',
+  'KR-30': '대전',
+  'KR-31': '울산',
+  'KR-36': '세종',
+  'KR-41': '경기',
+  'KR-42': '강원',
+  'KR-43': '충북',
+  'KR-44': '충남',
+  'KR-45': '전북',
+  'KR-46': '전남',
+  'KR-47': '경북',
+  'KR-48': '경남',
+  'KR-49': '제주',
+};
+
 // 반대 방향(한글 시도명 -> 코드)도 자주 쓰니까 미리 뒤집어서 만들어둠
 const SIDO_NAME_TO_CODE = Object.fromEntries(
   Object.entries(SIDO_CODE_TO_NAME).map(([code, name]) => [name, code])

@@ -336,7 +336,7 @@ function renderNationalAverageDonut(monthData, targetCanvasId) {
   });
 
   // 캡션(=도넛 정중앙 텍스트)은 "전국 평균"만. 색은 지도에 매칭되는 지역이 없으므로 회색.
-  renderContractDonut(targetCanvasId, weightedAvg, '전국 평균', '#666666');
+  renderContractDonut(targetCanvasId, weightedAvg, '전국 평균', '#3E8E73');
 }
 
 /**
@@ -355,7 +355,7 @@ function renderCompareLeftDonut(sidoName, year, month) {
     return;
   }
   // 캡션 색상(파랑)은 지도에서 compareLeft 지역 테두리 색·순위표 왼쪽 셀 배지 색과 동일하게 맞춤.
-  renderContractDonut('donut-left', rec.contract, sidoName, '#1d4ed8');
+  renderContractDonut('donut-left', rec.contract, sidoName, '#4E7FB8');
 }
 
 /**
@@ -391,7 +391,7 @@ function renderCompareRightDonut(sidoName, year, month) {
 
   if (slotEl) slotEl.classList.remove('is-empty');
   // 캡션 색상(분홍)은 지도에서 compareRight 지역 테두리 색·순위표 오른쪽 셀 배지 색과 동일하게 맞춤.
-  renderContractDonut('donut-right', rec.contract, sidoName, '#d6006d');
+  renderContractDonut('donut-right', rec.contract, sidoName, '#D4834F');
 }
 
 

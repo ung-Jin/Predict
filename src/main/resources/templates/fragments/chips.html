@@ -33,11 +33,19 @@
     <!-- 안쪽 <option>은 chip.js가 17개 시도로 채움. 여기 적힌 건 "아직 안 고름" 상태의
          안내 문구(값이 빈 문자열이라 선택 해제 용도로도 쓰임). -->
     <select id="chipA" class="chip-input" aria-label="비교 지역 A">
-      <option value="">지도에서 지역을 선택하세요</option>
+      <option value="">첫 번째 지역 (선택)</option>
     </select>
     <select id="chipB" class="chip-input" aria-label="비교 지역 B">
       <option value="">두 번째 지역 (선택)</option>
     </select>
+
+    <!-- [2026-10-07 / 1번] 선택 초기화. 사이드바 ⚡ 로고와 완전히 같은 방식이라
+         chip.js 에 이벤트를 더하지 않았다: sessionStorage 를 비우고 href 로 다시 들어가면
+         지도·도넛·순위표·KPI 가 모두 빈 값을 읽어 전국 상태로 다시 그려진다.
+         (여기서 'region:change-request' 를 쏘는 방법도 있지만, 어차피 페이지를 새로
+          그리는 게 목적이라 링크 한 줄로 끝난다) -->
+    <a href="/dashboard" class="chip-reset"
+       onclick="sessionStorage.removeItem('selectedRegionA');sessionStorage.removeItem('selectedRegionB');">선택 초기화</a>
   </div>
 
   <script th:src="@{/js/chip.js}"></script>
