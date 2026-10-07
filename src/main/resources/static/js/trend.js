@@ -1,10 +1,11 @@
 /* [3번 소유] 월별 사용량 추이 차트
  *
  * 데이터는 /chart-api/trend 에서 받아온다.
+ * 보여줄 기간(2025.07 ~ 2026.12)은 자바 쪽 KpiService 가 정해서 잘라 보낸다.
  * 받는 모양 : {
  *   unit : 'GWh',
- *   labels : ['2022.01', '2022.02', ... , '2026.10'],
- *   forecastStart : 54,                                  // 예측이 시작되는 칸 번호
+ *   labels : ['2025.07', '2025.08', ... , '2026.10'],
+ *   forecastStart : 12,                                  // 예측이 시작되는 칸 번호
  *   series : [ {name:'서울', actual:[...], forecast:[...]}, ... ]
  * }
  *
@@ -15,35 +16,47 @@
 //차트 객체를 저장할 변수. 다시 그릴 때 이전 차트를 지우는 데 쓴다
 let savedTrendChart = null;
 
-/* 선이 왼쪽에서 오른쪽으로 그려지는 효과.
-   선은 이미 다 그려져 있고, "보여줄 영역"을 왼쪽부터 조금씩 넓혀가는 방식이다.
-   점이 바닥에서 올라오는 게 아니라 제 높이로 그어지면서 드러난다.
+/* 예측이 시작되는 칸 번호. 아래 drawTrendChart 가 넣어두고 플러그인이 꺼내 쓴다.
+   차트를 만들기 "전에" 넣어야 한다. 차트는 만들어질 때 한 번 그려지는데,
+   그 시점에 값이 없으면 세로 점선이 그려지지 않는다. */
+let trendForecastStart = -1;
+
+/* 선과 음영이 왼쪽에서 오른쪽으로 그려지는 효과.
+
+   눈금(1,000 / 2,000 ...)과 가로 격자선은 처음부터 그대로 두고
+   "선과 음영만" 드러나야 한다. 이건 CSS 로는 할 수 없다.
+   눈금도 격자선도 선과 같은 캔버스 한 장에 그려지기 때문에,
+   캔버스를 가리면 전부 같이 가려진다.
+   그래서 Chart.js 가 "선을 그리는 순간"에만 끼어들어 그 부분만 범위를 제한한다.
+
+   Chart.js 는 한 번 그릴 때 아래 순서로 그린다.
+     격자·눈금 -> beforeDatasetsDraw -> 선·음영 -> afterDatasetsDraw -> 범례
+   가운데 두 자리에 우리 함수를 끼워 넣으면 선과 음영에만 효과가 걸린다.
 
    ctx.save() / ctx.clip() / ctx.restore() 세 개만 알면 된다.
      save    : 지금 설정을 잠깐 저장
-     clip    : 방금 그린 네모 "안쪽에만" 그려지게 제한
+     clip    : 방금 그린 네모 "안쪽에만" 그려지도록 제한
      restore : 저장해둔 설정으로 되돌리기 (제한 해제) */
-const TREND_DRAW_MS = 900;   //다 그려지는 데 걸리는 시간
+const TREND_DRAW_MS = 900;   //다 드러나는 데 걸리는 시간
+
+let trendDrawStart = 0;      //효과가 시작된 시각
+let trendDrawRatio = 0;      //0 = 아직 안 보임, 1 = 다 보임
+let trendDrawDone = false;   //다 드러났는지
 
 const trendDrawEffect = {
   id : 'trendDrawEffect',
 
   //선을 그리기 직전 : 지금까지 보여줄 만큼만 네모로 오려낸다
   beforeDatasetsDraw : function(chart){
-    if(chart.$drawDone){
-      return;   //다 그렸으면 아무것도 하지 않는다
+    if(trendDrawDone){
+      return;   //다 드러났으면 아무것도 하지 않는다
     }
 
-    //처음 들어왔을 때 시작 시각을 기록해둔다
-    if(!chart.$drawStart){
-      chart.$drawStart = Date.now();
-    }
+    //시작한 지 얼마나 지났는지를 0 ~ 1 사이의 값으로 바꾼다
+    trendDrawRatio = Math.min((Date.now() - trendDrawStart) / TREND_DRAW_MS, 1);
 
-    //0 에서 1 사이의 값. 1 이 되면 다 보여준 것
-    chart.$drawRatio = Math.min((Date.now() - chart.$drawStart) / TREND_DRAW_MS, 1);
-
-    const area = chart.chartArea;   //그래프가 그려지는 네모 영역
-    const width = (area.right - area.left) * chart.$drawRatio;
+    const area = chart.chartArea;                          //선이 그려지는 네모 영역
+    const width = (area.right - area.left) * trendDrawRatio;
 
     chart.ctx.save();
     chart.ctx.beginPath();
@@ -51,17 +64,18 @@ const trendDrawEffect = {
     chart.ctx.clip();
   },
 
-  //선을 다 그린 뒤 : 오려내기를 풀고, 아직 덜 보여줬으면 한 번 더 그리라고 요청한다
+  //선을 다 그린 뒤 : 오려내기를 풀고, 아직 덜 드러났으면 한 번 더 그려달라고 요청한다
   afterDatasetsDraw : function(chart){
-    if(chart.$drawDone){
+    if(trendDrawDone){
       return;
     }
+
     chart.ctx.restore();
 
-    if(chart.$drawRatio >= 1){
-      chart.$drawDone = true;   //끝났으면 다음부터는 오려내지 않는다
+    if(trendDrawRatio >= 1){
+      trendDrawDone = true;   //끝났으면 다음부터는 오려내지 않는다
     }else{
-      //다음 화면이 그려질 때 다시 호출해 달라고 브라우저에 부탁한다
+      //다음 화면이 그려질 때 다시 불러 달라고 브라우저에 부탁한다
       requestAnimationFrame(function(){ chart.draw(); });
     }
   }
@@ -74,12 +88,11 @@ const trendForecastLine = {
   id : 'trendForecastLine',
 
   afterDatasetsDraw : function(chart){
-    const start = chart.$forecastStart;
-    if(start == null || start < 0){
-      return;
+    if(trendForecastStart < 0){
+      return;   //예측 구간이 없으면 선을 긋지 않는다
     }
 
-    const x = chart.scales.x.getPixelForValue(start);   //그 칸의 가로 위치(픽셀)
+    const x = chart.scales.x.getPixelForValue(trendForecastStart);   //그 칸의 가로 위치(픽셀)
     const area = chart.chartArea;                       //그래프가 그려지는 네모 영역
     const ctx = chart.ctx;                              //그림을 그리는 도구
 
@@ -95,7 +108,8 @@ const trendForecastLine = {
     ctx.fillStyle = '#66789A';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('예측 시작', x - 6, area.top + 12);
+    //그래프 맨 윗 기준선 "위쪽" 바깥에 적는다. area.top 이 기준선 자리라 거기서 5px 더 올린다
+    ctx.fillText('예측 시작', x - 6, area.top - 5);
     ctx.restore();                   //저장해둔 설정으로 되돌리기
   }
 };
@@ -134,12 +148,20 @@ function drawTrendChart(chartData){
     const color = kpiSeriesColor(i, one.name);
     const lightColor = kpiSeriesLightColor(i, one.name);
 
-    //배경 칠하기는 첫 번째 줄에만. 두 줄 다 칠하면 서로 가린다
-    const fill = (i === 0);
-
-    datasets.push(makeTrendLine(one.name, one.actual, color, lightColor, [], fill));
+    /* 실측 선 아래는 두 줄 다 칠한다.
+       색이 반투명(0.18)이라 겹치는 자리도 아래쪽 색이 비쳐 보인다.
+       예측(점선)은 칠하지 않는다. 칠해진 구간이 곧 "실측 구간"이라는 표시가 된다. */
+    datasets.push(makeTrendLine(one.name, one.actual, color, lightColor, [], true));
     datasets.push(makeTrendLine(one.name + ' 예측', one.forecast, color, lightColor, [6, 4], false));
   }
+
+  //"예측 시작" 선을 그릴 자리를 플러그인이 꺼내 쓸 수 있게 미리 넣어둔다
+  trendForecastStart = chartData.forecastStart;
+
+  //드러내기 효과를 처음부터 다시 시작한다 (차트를 만들기 전에 해둬야 첫 그림부터 적용된다)
+  trendDrawStart = Date.now();
+  trendDrawRatio = 0;
+  trendDrawDone = false;
 
   //같은 자리에 두 번 그리면 Chart.js 가 오류를 내므로, 그리기 전에 이전 차트를 지운다
   if(savedTrendChart){
@@ -158,8 +180,8 @@ function drawTrendChart(chartData){
       //높이는 trend.css 가 정한다. 이 값이 true 면 캔버스가 계속 늘어난다
       maintainAspectRatio : false,
 
-      /* Chart.js 기본 애니메이션(점이 바닥에서 올라오는 효과)은 끈다.
-         선이 왼쪽부터 그려지는 효과는 아래 trend-draw 클래스가 맡는다. */
+      /* Chart.js 기본 애니메이션은 점이 바닥에서 올라오는 효과라
+         월별 추이에는 어울리지 않아서 끈다. 선이 바로 그려진다. */
       animation : false,
 
       //마우스를 올리면 그 달의 모든 선 값을 한 번에 보여준다
@@ -172,9 +194,17 @@ function drawTrendChart(chartData){
           align : 'end',
           labels : {
             usePointStyle : true,
-            pointStyle : 'circle',   //범례 표시를 작은 동그라미로
-            boxWidth : 8,
-            padding : 14,
+            pointStyle : 'circle',   //범례 표시를 동그라미로
+            /* 동그라미 지름을 요약 카드의 점(.kpi-dot 9px)과 맞춘다.
+               Chart.js 는 boxHeight 에 1.41 을 곱한 값을 지름으로 쓴다.
+               여기는 선 그래프라 선 굵기(borderWidth 2)가 동그라미 테두리로도 쓰여서
+               바깥으로 1px 씩, 지름으로 2px 이 더 붙는다.
+               그래서 (9 - 2) / 1.41 = 5 를 넣어야 테두리까지 합쳐 9px 가 된다.
+               막대 그래프인 forecast3.js 는 테두리가 없어서 6.4 를 쓴다.
+               boxWidth 는 동그라미가 들어갈 가로 자리폭이라 9px 로 둔다. */
+            boxHeight : 5,
+            boxWidth : 9,
+            padding : 6,      //범례와 그래프 사이 간격. 클수록 그래프가 아래로 밀린다
             //'예측' 선은 범례에서 뺀다. 실선/점선으로 이미 구분된다
             filter : function(item){
               return item.text.indexOf(' 예측') === -1;
@@ -191,15 +221,17 @@ function drawTrendChart(chartData){
       },
       scales : {
         x : {
-          //세로 격자선은 끈다. 58개월치라 그어놓으면 너무 복잡하다
+          //세로 격자선은 끈다. 달 수가 많아서 다 그으면 복잡하다
           grid : { display : false },
           ticks : {
             maxRotation : 0,
-            //58개월치를 다 찍으면 글자가 겹친다. 1월만 골라 연도로 바꿔 보여준다
+            /* 달마다 글자를 다 찍으면 서로 겹친다. 석 달에 한 번만 보여준다.
+               1, 4, 7, 10월을 3 으로 나누면 나머지가 1 이라서 이렇게 고른다. */
             callback : function(value){
-              const label = this.getLabelForValue(value);
-              if(label.endsWith('.01')){
-                return label.substring(0, 4);   //'2026.01' -> '2026'
+              const label = this.getLabelForValue(value);   //'2025.07'
+              const month = Number(label.substring(5));     //7
+              if(month % 3 === 1){
+                return label;
               }
               return '';
             }
@@ -215,9 +247,6 @@ function drawTrendChart(chartData){
     },
     plugins : [trendDrawEffect, trendForecastLine]   //이 차트에만 쓰는 플러그인
   });
-
-  //"예측 시작" 선을 그릴 위치를 플러그인이 꺼내 쓸 수 있게 차트에 넣어둔다
-  savedTrendChart.$forecastStart = chartData.forecastStart;
 }
 
 //화면이 열리면 추이 데이터를 조회하는 함수

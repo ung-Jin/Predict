@@ -1,5 +1,6 @@
 package com.green.Predict.kpi.service;
 
+import com.green.Predict.kpi.dto.SeriesDTO;
 import com.green.Predict.kpi.mapper.KpiMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,23 +18,17 @@ public class KpiService {
   //DB 는 kWh 로 저장돼 있고 화면은 GWh 로 보여준다. 1 GWh = 100만 kWh
   private static final double KWH_PER_GWH = 1000000d;
 
+  /* 월별 사용량 추이 차트에 보여줄 구간 : 2025년 7월 ~ 2026년 12월.
+     연과 월을 202507 처럼 숫자 하나로 붙여서 비교한다 (2025*100 + 7).
+     이렇게 하면 연도가 바뀌는 구간도 크다/작다 한 번으로 판단된다.
+     보여줄 기간을 바꾸려면 이 두 숫자만 고치면 된다. */
+  private static final int TREND_FROM = 202507;
+  private static final int TREND_TO = 202612;
+
+  //"앞으로 3개월 예측" 카드가 쓸 달 수
+  private static final int FORECAST_MONTHS = 3;
+
   private final KpiMapper kpiMapper;
-
-  /**
-   * 화면에 그릴 "한 줄"의 정보를 담아두는 클래스.
-   * 카드도, 막대도, 선도 전부 이 한 줄 단위로 그린다.
-   */
-  private static class Series {
-    String name;          //화면에 보여줄 이름 (전국 / 서울 / 시도 평균)
-    String regionName;    //DB 에서 걸러낼 시도명. null 이면 17개 시도 전체
-    boolean useAverage;   //true 면 17개 시도의 평균, false 면 합계를 쓴다
-
-    Series(String name, String regionName, boolean useAverage){
-      this.name = name;
-      this.regionName = regionName;
-      this.useAverage = useAverage;
-    }
-  }
 
   /**
    * 지도에서 고른 지역(a, b)을 보고 화면에 몇 줄을 그릴지 정한다.
@@ -41,15 +36,23 @@ public class KpiService {
    *   하나 골랐으면        : 그 시도 + 시도 평균 (비교용)
    *   두 개 골랐으면       : 두 시도
    */
-  private List<Series> makeSeriesList(String a, String b){
-    List<Series> list = new ArrayList<>();
+  private List<SeriesDTO> makeSeriesList(String a, String b){
+    List<SeriesDTO> list = new ArrayList<>();
 
-    String regionA = emptyToNull(a);
-    String regionB = emptyToNull(b);
+    String regionA = a;
+    String regionB = b;
+
+    //빈 문자열로 들어오면 "안 고른 것"으로 본다
+    if(regionA != null && regionA.isBlank()){
+      regionA = null;
+    }
+    if(regionB != null && regionB.isBlank()){
+      regionB = null;
+    }
 
     //아무것도 안 골랐을 때
     if(regionA == null && regionB == null){
-      list.add(new Series("전국", null, false));
+      list.add( new SeriesDTO("전국", null, false) );
       return list;
     }
 
@@ -60,13 +63,13 @@ public class KpiService {
     }
 
     //첫 번째 줄 : 고른 지역
-    list.add(new Series(toShortName(regionA), regionA, false));
+    list.add( new SeriesDTO(toShortName(regionA), regionA, false) );
 
     //두 번째 줄 : 두 번째 지역이 있으면 그 지역, 없으면 시도 평균
     if(regionB != null){
-      list.add(new Series(toShortName(regionB), regionB, false));
+      list.add( new SeriesDTO(toShortName(regionB), regionB, false) );
     }else{
-      list.add(new Series("시도 평균", null, true));
+      list.add( new SeriesDTO("시도 평균", null, true) );
     }
 
     return list;
@@ -77,17 +80,17 @@ public class KpiService {
    * 줄 하나를 만들려면 쿼리 3개(최근 실측 / 3개월 예측 / 검증 오차)를 각각 돌린다.
    */
   public Map<String, Object> getCardData(String a, String b){
-    List<Series> seriesList = makeSeriesList(a, b);
+    List<SeriesDTO> seriesList = makeSeriesList(a, b);
     List<Map<String, Object>> cards = new ArrayList<>();
 
     Map<String, Object> resultMap = new HashMap<>();
 
     for(int i = 0; i < seriesList.size(); i++){
-      Series series = seriesList.get(i);
+      SeriesDTO series = seriesList.get(i);
 
-      List<HashMap<String, Object>> recentRows = kpiMapper.getRecentUsage(series.regionName);
-      List<HashMap<String, Object>> forecastRows = kpiMapper.getForecastTrend(series.regionName);
-      List<HashMap<String, Object>> mapeRows = kpiMapper.getMape(series.regionName);
+      List<HashMap<String, Object>> recentRows = kpiMapper.getRecentUsage(series.getRegionName());
+      List<HashMap<String, Object>> forecastRows = kpiMapper.getForecastTrend(series.getRegionName());
+      List<HashMap<String, Object>> mapeRows = kpiMapper.getMape(series.getRegionName());
 
       if(recentRows.isEmpty() || forecastRows.isEmpty()){
         continue;
@@ -104,10 +107,19 @@ public class KpiService {
         resultMap.put("forecastMonth", forecast.get("DATA_MONTH"));
       }
 
+      //합계를 쓸지 평균을 쓸지 고른다 (시도를 하나만 걸렀으면 둘이 같은 값이다)
+      Object recentKwh = recent.get("TOTAL_KWH");
+      Object predictedKwh = forecast.get("TOTAL_KWH");
+
+      if(series.isUseAverage()){
+        recentKwh = recent.get("AVG_KWH");
+        predictedKwh = forecast.get("AVG_KWH");
+      }
+
       Map<String, Object> card = new HashMap<>();
-      card.put("name", series.name);
-      card.put("recentGwh", toGwh(pickValue(recent, series)));
-      card.put("predictedGwh", toGwh(pickValue(forecast, series)));
+      card.put("name", series.getName());
+      card.put("recentGwh", toGwh(recentKwh));
+      card.put("predictedGwh", toGwh(predictedKwh));
       card.put("yoyPct", toDouble(forecast.get("YOY_PCT")));
       card.put("mape", toDouble(mape.get("MAPE")));
       cards.add(card);
@@ -119,31 +131,46 @@ public class KpiService {
 
   /** 앞으로 3개월 예측 (막대 차트) */
   public Map<String, Object> getForecast3Data(String a, String b){
-    List<Series> seriesList = makeSeriesList(a, b);
+    List<SeriesDTO> seriesList = makeSeriesList(a, b);
 
     List<String> labels = new ArrayList<>();
     List<Map<String, Object>> chartSeries = new ArrayList<>();
 
     for(int i = 0; i < seriesList.size(); i++){
-      Series series = seriesList.get(i);
-      List<HashMap<String, Object>> rows = kpiMapper.getForecastTrend(series.regionName);
+      SeriesDTO series = seriesList.get(i);
+      List<HashMap<String, Object>> rows = kpiMapper.getForecastTrend(series.getRegionName());
 
       List<Long> predicted = new ArrayList<>();
       List<Long> prevYear = new ArrayList<>();
       List<Double> yoyList = new ArrayList<>();
 
-      for(HashMap<String, Object> row : rows){
+      //"앞으로 3개월" 카드라서 가장 이른 3개월만 쓴다.
+      //예측 표에 11월, 12월이 더 들어와도 이 카드는 3칸으로 유지된다.
+      for(int m = 0; m < rows.size() && m < FORECAST_MONTHS; m++){
+        HashMap<String, Object> row = rows.get(m);
+
         //x축 이름(8월, 9월, 10월)은 첫 번째 줄을 돌 때만 만들면 된다
         if(i == 0){
-          labels.add( toInt(row.get("DATA_MONTH")) + "월" );
+          int month = ((Number)row.get("DATA_MONTH")).intValue();
+          labels.add( month + "월" );
         }
-        predicted.add(toGwh(pickValue(row, series)));
-        prevYear.add(toGwh(pickPrevValue(row, series)));
-        yoyList.add(toDouble(row.get("YOY_PCT")));
+
+        //합계를 쓸지 평균을 쓸지 고른다
+        Object predictedKwh = row.get("TOTAL_KWH");
+        Object prevKwh = row.get("PREV_TOTAL_KWH");
+
+        if(series.isUseAverage()){
+          predictedKwh = row.get("AVG_KWH");
+          prevKwh = row.get("PREV_AVG_KWH");
+        }
+
+        predicted.add( toGwh(predictedKwh) );
+        prevYear.add( toGwh(prevKwh) );
+        yoyList.add( toDouble(row.get("YOY_PCT")) );
       }
 
       Map<String, Object> one = new HashMap<>();
-      one.put("name", series.name);
+      one.put("name", series.getName());
       one.put("predicted", predicted);
       one.put("prevYear", prevYear);
       one.put("yoyPct", yoyList);
@@ -157,51 +184,85 @@ public class KpiService {
     return resultMap;
   }
 
-  /** 월별 사용량 추이 (실측 전체 + 앞으로 3개월 예측) */
+  /** 월별 사용량 추이 (실측 + 앞으로 3개월 예측) */
   public Map<String, Object> getTrendData(String a, String b){
-    List<Series> seriesList = makeSeriesList(a, b);
+    List<SeriesDTO> seriesList = makeSeriesList(a, b);
 
     List<String> labels = new ArrayList<>();
     List<Map<String, Object>> chartSeries = new ArrayList<>();
     int forecastStart = -1;
 
     for(int i = 0; i < seriesList.size(); i++){
-      Series series = seriesList.get(i);
+      SeriesDTO series = seriesList.get(i);
 
-      List<HashMap<String, Object>> actualRows = kpiMapper.getActualTrend(series.regionName);
-      List<HashMap<String, Object>> forecastRows = kpiMapper.getForecastTrend(series.regionName);
+      List<HashMap<String, Object>> actualRows = kpiMapper.getActualTrend(series.getRegionName());
+      List<HashMap<String, Object>> forecastRows = kpiMapper.getForecastTrend(series.getRegionName());
 
       List<Long> actual = new ArrayList<>();
       List<Long> forecast = new ArrayList<>();
 
       //실측 구간 : 실측 값만 채우고 예측 자리는 비워둔다(null)
       for(HashMap<String, Object> row : actualRows){
-        if(i == 0){
-          labels.add(toLabel(row));
+        int year = ((Number)row.get("DATA_YEAR")).intValue();
+        int month = ((Number)row.get("DATA_MONTH")).intValue();
+        int yearMonth = year * 100 + month;
+
+        //보여줄 구간(2025.07 ~ 2026.12) 밖이면 건너뛴다
+        if(yearMonth < TREND_FROM || yearMonth > TREND_TO){
+          continue;
         }
-        actual.add(toGwh(pickValue(row, series)));
+
+        //x축 이름(2026.07)은 첫 번째 줄을 돌 때만 만들면 된다
+        if(i == 0){
+          labels.add( String.format("%d.%02d", year, month) );
+        }
+
+        Object kwh = row.get("TOTAL_KWH");
+        if(series.isUseAverage()){
+          kwh = row.get("AVG_KWH");
+        }
+
+        actual.add( toGwh(kwh) );
         forecast.add(null);
       }
 
+      //실측이 끝나는 자리. 아래에서 두 선을 이어 붙일 때 쓴다
+      int lastActual = actual.size() - 1;
+
       //예측 구간 : 반대로 예측만 채운다
       for(HashMap<String, Object> row : forecastRows){
-        if(i == 0){
-          labels.add(toLabel(row));
+        int year = ((Number)row.get("DATA_YEAR")).intValue();
+        int month = ((Number)row.get("DATA_MONTH")).intValue();
+        int yearMonth = year * 100 + month;
+
+        if(yearMonth < TREND_FROM || yearMonth > TREND_TO){
+          continue;
         }
+
+        if(i == 0){
+          labels.add( String.format("%d.%02d", year, month) );
+        }
+
+        Object kwh = row.get("TOTAL_KWH");
+        if(series.isUseAverage()){
+          kwh = row.get("AVG_KWH");
+        }
+
         actual.add(null);
-        forecast.add(toGwh(pickValue(row, series)));
+        forecast.add( toGwh(kwh) );
       }
 
       //실측과 예측은 서로 다른 표라서 그냥 이어 붙이면 두 선 사이가 끊긴다.
       //마지막 실측값을 예측 배열에도 한 번 더 넣어 선을 이어준다.
-      int lastActual = actualRows.size() - 1;
-      if(lastActual >= 0 && !forecastRows.isEmpty()){
+      boolean hasForecast = actual.size() > lastActual + 1;
+
+      if(lastActual >= 0 && hasForecast){
         forecast.set(lastActual, actual.get(lastActual));
         forecastStart = lastActual;
       }
 
       Map<String, Object> one = new HashMap<>();
-      one.put("name", series.name);
+      one.put("name", series.getName());
       one.put("actual", actual);
       one.put("forecast", forecast);
       chartSeries.add(one);
@@ -220,6 +281,7 @@ public class KpiService {
     List<HashMap<String, Object>> rows = kpiMapper.getForecastByRegion();
 
     Map<String, Object> resultMap = new HashMap<>();
+
     if(rows.isEmpty()){
       return resultMap;
     }
@@ -248,29 +310,6 @@ public class KpiService {
   // 아래는 위에서 쓰는 작은 도구 함수들
   // ------------------------------------------------------------------
 
-  /** 합계를 쓸지 평균을 쓸지 고른다 (시도를 하나만 걸렀으면 둘이 같은 값이다) */
-  private static Object pickValue(HashMap<String, Object> row, Series series){
-    if(series.useAverage){
-      return row.get("AVG_KWH");
-    }
-    return row.get("TOTAL_KWH");
-  }
-
-  /** 위와 같지만 "작년 같은 달" 값을 고른다 (3개월 예측의 얇은 막대용) */
-  private static Object pickPrevValue(HashMap<String, Object> row, Series series){
-    if(series.useAverage){
-      return row.get("PREV_AVG_KWH");
-    }
-    return row.get("PREV_TOTAL_KWH");
-  }
-
-  /** 2026년 7월 -> "2026.07" (추이 차트 x축 이름) */
-  private static String toLabel(HashMap<String, Object> row){
-    int year = toInt(row.get("DATA_YEAR"));
-    int month = toInt(row.get("DATA_MONTH"));
-    return String.format("%d.%02d", year, month);
-  }
-
   /** '서울특별시' -> '서울'. 목록에 없으면 받은 이름을 그대로 쓴다 */
   private String toShortName(String regionName){
     for(HashMap<String, Object> row : kpiMapper.getRegions()){
@@ -281,15 +320,7 @@ public class KpiService {
     return regionName;
   }
 
-  /** 빈 문자열은 null 과 같이 취급한다 */
-  private static String emptyToNull(String value){
-    if(value == null || value.isBlank()){
-      return null;
-    }
-    return value;
-  }
-
-  /** kWh -> GWh (100만으로 나누고 반올림) */
+  /** kWh -> GWh (100만으로 나누고 반올림). 값이 없으면 null 그대로 돌려준다 */
   private static Long toGwh(Object kwh){
     if(kwh == null){
       return null;
@@ -297,17 +328,12 @@ public class KpiService {
     return Math.round( ((Number)kwh).doubleValue() / KWH_PER_GWH );
   }
 
-  /** DB 에서 온 숫자를 Double 로 바꾼다 */
+  /** DB 에서 온 숫자를 Double 로 바꾼다. 값이 없으면 null 그대로 돌려준다 */
   private static Double toDouble(Object value){
     if(value == null){
       return null;
     }
     return ((Number)value).doubleValue();
-  }
-
-  /** DB 에서 온 숫자를 int 로 바꾼다 */
-  private static int toInt(Object value){
-    return ((Number)value).intValue();
   }
 
 }

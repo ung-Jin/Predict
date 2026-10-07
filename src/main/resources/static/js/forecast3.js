@@ -111,9 +111,14 @@ function drawForecast3Chart(chartData){
           align : 'end',
           labels : {
             usePointStyle : true,
-            pointStyle : 'circle',   //범례 표시를 작은 동그라미로
-            boxWidth : 8,
-            padding : 14,
+            pointStyle : 'circle',   //범례 표시를 동그라미로
+            /* 동그라미 지름을 요약 카드의 점(.kpi-dot 9px)과 맞춘다.
+               Chart.js 는 boxHeight 에 1.41 을 곱한 값을 지름으로 쓰므로
+               9 / 1.41 = 6.4 를 넣으면 화면에 9px 로 그려진다.
+               boxWidth 는 동그라미가 들어갈 가로 자리폭이라 9px 로 둔다. */
+            boxHeight : 6.4,
+            boxWidth : 9,
+            padding : 6,      //범례와 그래프 사이 간격. 클수록 그래프가 아래로 밀린다
             //'작년' 막대는 범례에서 뺀다. 제목 옆에 "얇은 막대는 작년"이라고 적어뒀다
             filter : function(item){
               return item.text.indexOf(' 작년') === -1;

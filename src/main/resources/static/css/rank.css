@@ -11,6 +11,12 @@
 .rank {
   flex: 1;
   min-width: 0;
+  /* 옆자리에 들어오는 "앞으로 3개월 예측" 카드와 높이를 맞춘다 (dashboard.css 참고) */
+  /* common.css 의 .card 는 안쪽 여백이 16px 인데, 기본 계산 방식에서는
+     height 가 "여백을 뺀 안쪽 높이"를 뜻해서 카드가 212+32+2 = 246px 이 된다.
+     border-box 로 바꾸면 height 가 "테두리까지 포함한 전체 높이"가 된다. */
+  box-sizing: border-box;
+  height: var(--mid-card-height);
 }
 
 /* 카드 머리말 : 제목 옆에 "전년 동월 대비" */
@@ -33,23 +39,48 @@
   color: var(--mute);
 }
 
-/* 17개 시도를 두 열로 나눠 담는다.
-   grid-auto-flow:column 이라 앞쪽 절반이 왼쪽 열에 세로로 쌓인다.
-   한 열에 몇 줄인지(grid-template-rows)는 rank.js 가 데이터 개수에 맞춰 넣는다. */
+/* "증가 지역" 칸과 "감소 지역" 칸을 좌우로 나란히 놓는다.
+   칸 안의 내용은 rank.js 가 통째로 만들어 넣는다. */
 .rank-list {
   display: grid;
-  grid-auto-flow: column;
   grid-template-columns: 1fr 1fr;
-  column-gap: 18px;
-  row-gap: 5px;
+  column-gap: 24px;
 }
 
-/* 한 줄 = [지역명] [막대] [값] */
+/* 한 칸 (증가 지역 / 감소 지역) */
+.rank-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 칸 머리말 ("● 증가 지역") */
+.rank-group-title {
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* 머리말 앞의 점. 요약 카드 점(.kpi-dot)과 같은 9px.
+   색은 rank.js 가 넣는다 (증가=분홍, 감소=파랑). */
+.rank-group-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* 한 줄 = [지역명] [선+점] [값]
+   gap 이 10px 인 이유 : 선 끝의 점이 선 밖으로 4.5px 나오므로 값과 부딪히지 않게 띄운다. */
 .rank-row {
   display: grid;
   grid-template-columns: 30px 1fr 42px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .rank-name {
@@ -59,19 +90,36 @@
   white-space: nowrap;
 }
 
-/* 막대가 놓이는 트랙 (값이 0 이어도 보이는 바탕) */
+/* 선이 놓이는 칸. 점을 선 끝에 붙이려고 기준(position:relative)만 잡아둔다 */
 .rank-bar {
-  height: 8px;
-  background: #F1F5FB;
-  border-radius: 4px;
+  position: relative;
+  height: 9px;
 }
 
-/* 실제 막대. 길이(width)와 색(background)은 rank.js 가 넣는다.
-   기준선(왼쪽)은 각지게, 값이 끝나는 쪽(오른쪽)만 둥글게. */
-.rank-bar i {
+/* 값의 크기만큼 늘어나는 선. 길이(width)와 색(background)은 rank.js 가 넣는다.
+   margin-top:-1px 은 선 두께(2px)의 절반이다. 칸의 세로 가운데에 놓기 위함. */
+.rank-line {
   display: block;
-  height: 100%;
-  border-radius: 0 4px 4px 0;
+  position: absolute;
+  top: 50%;
+  margin-top: -1px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* 선 끝에 찍는 점.
+   background:inherit 은 "바로 위(.rank-line)와 같은 색을 쓴다"는 뜻이라
+   rank.js 가 색을 한 번만 넣어도 선과 점이 같은 색이 된다.
+   right/top 의 -4.5px, -3.5px 는 점(9px)의 가운데를 선 끝에 맞추려고 뺀 값이다. */
+.rank-line::after {
+  content: '';
+  position: absolute;
+  right: -4.5px;
+  top: -3.5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: inherit;
 }
 
 .rank-value {

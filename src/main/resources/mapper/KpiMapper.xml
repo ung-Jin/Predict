@@ -9,7 +9,11 @@
   아래 쿼리들의 공통 규칙
 
   1) regionName 이 있으면 그 시도만, 없으면 17개 시도 전체를 본다.
-     <if> 는 조건이 참일 때만 그 안의 SQL 을 끼워 넣는 MyBatis 문법이다.
+     WHERE (#{regionName} IS NULL OR rg.region_name = #{regionName})
+     -> 값이 없으면 앞쪽(NULL IS NULL)이 참이라 조건이 통과되고 전체가 조회된다.
+        값이 있으면 뒤쪽이 참인 줄, 즉 그 시도만 남는다.
+     jdbcType=VARCHAR 는 꼭 적어야 한다. 값이 null 일 때 MyBatis 가
+     "이게 무슨 타입인지" 알지 못해 오류를 내기 때문이다.
 
   2) 전체를 볼 때 쓸 값이 두 가지라서 합계와 평균을 같이 가져온다.
        - 지역을 안 골랐을 때  : 전국 합계   -> TOTAL_KWH
@@ -25,9 +29,7 @@
          , AVG(md.usage_kwh) AS AVG_KWH
     FROM monthly_data md
     JOIN region rg ON rg.region_id = md.region_id
-    <if test="regionName != null">
-      WHERE rg.region_name = #{regionName}
-    </if>
+    WHERE (#{regionName, jdbcType=VARCHAR} IS NULL OR rg.region_name = #{regionName})
     GROUP BY md.year, md.month
     ORDER BY md.year DESC, md.month DESC
     LIMIT 1
@@ -40,12 +42,12 @@
     SELECT ROUND(AVG(ABS(bt.predicted_kwh - bt.actual_kwh) / bt.actual_kwh) * 100, 2) AS MAPE
     FROM backtest bt
     JOIN region rg ON rg.region_id = bt.region_id
-    <if test="regionName != null">
-      WHERE rg.region_name = #{regionName}
-    </if>
+    WHERE (#{regionName, jdbcType=VARCHAR} IS NULL OR rg.region_name = #{regionName})
   </select>
 
-<!--  3. 월별 실측 사용량 (2022년 1월부터 데이터 끝까지). 추이 차트의 실선 -->
+<!--  3. 월별 실측 사용량 (2022년 1월부터 데이터 끝까지). 추이 차트의 실선.
+       화면에 보여줄 기간(2025.07 ~ 2026.12)은 KpiService 의 TREND_FROM / TREND_TO 가 정한다.
+       쿼리는 전부 가져오고 자바에서 잘라내는데, 월 단위라 줄 수가 적어서 이렇게 해도 느리지 않다. -->
   <select id="getActualTrend" resultType="HashMap">
     SELECT md.year  AS DATA_YEAR
          , md.month AS DATA_MONTH
@@ -53,9 +55,7 @@
          , AVG(md.usage_kwh) AS AVG_KWH
     FROM monthly_data md
     JOIN region rg ON rg.region_id = md.region_id
-    <if test="regionName != null">
-      WHERE rg.region_name = #{regionName}
-    </if>
+    WHERE (#{regionName, jdbcType=VARCHAR} IS NULL OR rg.region_name = #{regionName})
     GROUP BY md.year, md.month
     ORDER BY md.year, md.month
   </select>
@@ -73,16 +73,14 @@
          , ROUND((SUM(fc.predicted_kwh) / SUM(fc.prev_year_kwh) - 1) * 100, 1) AS YOY_PCT
     FROM forecast fc
     JOIN region rg ON rg.region_id = fc.region_id
-    <if test="regionName != null">
-      WHERE rg.region_name = #{regionName}
-    </if>
+    WHERE (#{regionName, jdbcType=VARCHAR} IS NULL OR rg.region_name = #{regionName})
     GROUP BY fc.year, fc.month
     ORDER BY fc.year, fc.month
   </select>
 
 <!--  5. 시도별 증감률 순위 (지역을 하나도 안 골랐을 때 보여주는 카드).
-       먼저 안쪽 괄호에서 "가장 이른 예측 달"(2026년 8월) 한 줄을 뽑고,
-       그 달에 해당하는 17개 시도만 남겨서 증가가 큰 순으로 정렬한다. -->
+       연과 월을 202608 처럼 숫자 하나로 붙인 뒤, 그 중 가장 작은 값(= 가장 이른 예측 달)과
+       같은 줄만 남긴다. 그러면 그 달의 17개 시도만 남고, 증가가 큰 순으로 정렬한다. -->
   <select id="getForecastByRegion" resultType="HashMap">
     SELECT rg.short_name  AS SHORT_NAME
          , rg.region_name AS REGION_NAME
@@ -91,10 +89,7 @@
          , ROUND((fc.predicted_kwh / fc.prev_year_kwh - 1) * 100, 1) AS YOY_PCT
     FROM forecast fc
     JOIN region rg ON rg.region_id = fc.region_id
-    JOIN (SELECT year AS y, month AS m
-          FROM forecast
-          ORDER BY year, month
-          LIMIT 1) first ON fc.year = first.y AND fc.month = first.m
+    WHERE fc.year * 100 + fc.month = (SELECT MIN(year * 100 + month) FROM forecast)
     ORDER BY YOY_PCT DESC, rg.short_name
   </select>
 

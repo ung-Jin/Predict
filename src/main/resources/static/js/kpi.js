@@ -14,14 +14,16 @@
  */
 
 /* 카드 한 장을 채우는 함수.
- *   cardId      : 채울 카드의 id            (예: 'kpiRecent')
- *   labelText   : 카드 위에 쓸 제목         (예: '최근 실측 · 2026.7')
- *   seriesList  : 줄 목록                   (서버에서 받은 series)
- *   valueName   : 그 줄에서 꺼내 쓸 값 이름  (예: 'recentGwh')
- *   unit        : 숫자 뒤에 붙일 단위        ('GWh' 또는 '%')
- *   showPlus    : 양수일 때 '+' 를 붙일지    (증감률만 true)
+ *   cardId    : 채울 카드의 id       (예: 'kpiRecent')
+ *   labelText : 카드 위에 쓸 제목    (예: '최근 실측 · 2026.7')
+ *   nameList  : 지역 이름 목록       (예: ['경북', '충북'])
+ *   textList  : 보여줄 값 목록       (예: ['3,358', '2,304'])
+ *   unit      : 숫자 뒤에 붙일 단위  ('GWh' 또는 '%')
+ *
+ * nameList 와 textList 는 길이가 같고 같은 순서로 짝을 이룬다.
+ * 즉 nameList[0] 의 값이 textList[0] 이다.
  */
-function fillKpiCard(cardId, labelText, seriesList, valueName, unit, showPlus){
+function fillKpiCard(cardId, labelText, nameList, textList, unit){
   const card = document.querySelector('#' + cardId);
   const label = card.querySelector('.kpi-label');
   const rows = card.querySelector('.kpi-rows');
@@ -31,24 +33,12 @@ function fillKpiCard(cardId, labelText, seriesList, valueName, unit, showPlus){
   //한 줄씩 HTML 을 만들어서 이어 붙인다
   let html = '';
 
-  for(let i = 0; i < seriesList.length; i++){
-    const one = seriesList[i];
-    const value = one[valueName];
-    const color = kpiSeriesColor(i, one.name);
-
-    //단위에 따라 숫자 모양을 정한다. GWh 는 천 단위 콤마, % 는 소수점 한 자리
-    let valueText;
-    if(unit === 'GWh'){
-      valueText = kpiComma(value);
-    }else if(showPlus){
-      valueText = kpiSigned(value, 1);
-    }else{
-      valueText = Number(value).toFixed(1);
-    }
+  for(let i = 0; i < nameList.length; i++){
+    const color = kpiSeriesColor(i, nameList[i]);
 
     html += '<div class="kpi-row">';
-    html += '  <span class="kpi-name"><i class="kpi-dot" style="background:' + color + '"></i>' + one.name + '</span>';
-    html += '  <span class="kpi-value">' + valueText + '</span>';
+    html += '  <span class="kpi-name"><i class="kpi-dot" style="background:' + color + '"></i>' + nameList[i] + '</span>';
+    html += '  <span class="kpi-value">' + textList[i] + '</span>';
     html += '  <span class="kpi-unit">' + unit + '</span>';
     html += '</div>';
   }
@@ -61,25 +51,44 @@ function fillKpiCard(cardId, labelText, seriesList, valueName, unit, showPlus){
 function drawKpiCards(chartData){
   const series = chartData.series;
 
+  /* 받은 데이터를 카드별 목록으로 나눠 담는다.
+     한 번 돌면서 다섯 개의 목록을 동시에 채운다.
+     이렇게 해두면 아래에서 카드마다 목록 하나씩만 넘겨주면 된다. */
+  const nameList = [];        //지역 이름       : ['경북', '충북']
+  const recentList = [];      //최근 실측       : ['3,358', '2,304']
+  const predictedList = [];   //예측 사용량     : ['3,827', '2,415']
+  const yoyList = [];         //전년 동월 대비  : ['-1.0', '-1.1']
+  const mapeList = [];        //검증 오차       : ['5.9', '4.4']
+
+  for(let i = 0; i < series.length; i++){
+    const one = series[i];
+
+    nameList.push( one.name );
+    recentList.push( kpiComma(one.recentGwh) );        //천 단위 콤마를 넣는다
+    predictedList.push( kpiComma(one.predictedGwh) );
+    yoyList.push( kpiSigned(one.yoyPct, 1) );          //늘었으면 앞에 + 를 붙인다
+    mapeList.push( Number(one.mape).toFixed(1) );      //오차는 부호가 없는 값이라 + 를 안 붙인다
+  }
+
   //1) 최근 실측
   fillKpiCard('kpiRecent',
               '최근 실측 · ' + chartData.recentYear + '.' + chartData.recentMonth,
-              series, 'recentGwh', 'GWh', false);
+              nameList, recentList, 'GWh');
 
   //2) 예측 사용량
   fillKpiCard('kpiPredicted',
               chartData.forecastMonth + '월 예측 사용량',
-              series, 'predictedGwh', 'GWh', false);
+              nameList, predictedList, 'GWh');
 
-  //3) 전년 동월 대비 (늘었으면 + 를 붙인다)
+  //3) 전년 동월 대비
   fillKpiCard('kpiYoy',
               '전년 동월 대비 · ' + chartData.forecastMonth + '월 예측',
-              series, 'yoyPct', '%', true);
+              nameList, yoyList, '%');
 
-  //4) 검증 오차 (오차는 부호가 없는 값이라 + 를 안 붙인다)
+  //4) 검증 오차
   fillKpiCard('kpiMape',
               '검증 오차 (MAPE)',
-              series, 'mape', '%', false);
+              nameList, mapeList, '%');
 }
 
 //화면이 열리면 카드 데이터를 조회하는 함수

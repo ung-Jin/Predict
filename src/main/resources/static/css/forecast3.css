@@ -5,6 +5,12 @@
   min-width: 0;             /* 이게 없으면 차트가 카드를 밀어내 폭이 틀어진다 */
   display: flex;
   flex-direction: column;
+  /* 지역을 안 골랐을 때 이 자리에 있는 "순위" 카드와 높이를 맞춘다 (dashboard.css 참고) */
+  /* common.css 의 .card 는 안쪽 여백이 16px 인데, 기본 계산 방식에서는
+     height 가 "여백을 뺀 안쪽 높이"를 뜻해서 카드가 212+32+2 = 246px 이 된다.
+     border-box 로 바꾸면 height 가 "테두리까지 포함한 전체 높이"가 된다. */
+  box-sizing: border-box;
+  height: var(--mid-card-height);
 }
 
 /* 카드 머리말 : 제목 옆에 "GWh · 얇은 막대는 작년" */
@@ -12,12 +18,13 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .forecast3-title {
   margin: 0;
-  font-size: 14px;
+  /* 요약 카드 제목(.kpi-label)과 같은 크기 */
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -28,12 +35,21 @@
 }
 
 /* 차트 영역 확보.
-   Chart.js 는 캔버스를 부모 크기에 맞춘다. 부모에 height 가 없으면
+   Chart.js 는 캔버스를 부모 크기에 맞춘다. 부모 높이가 정해져 있지 않으면
    리사이즈할 때마다 캔버스가 계속 늘어난다.
-   height 고정 + position:relative + JS 의 maintainAspectRatio:false 가 한 세트다. */
+   부모 높이가 정해짐 + position:relative + JS 의 maintainAspectRatio:false 가 한 세트다.
+
+   카드 전체 높이는 위에서 고정했으므로, 차트는 "머리말과 아래 증감률 글자를 빼고 남는 만큼"
+   차지하면 된다. 그게 flex:1 이다.
+   덕분에 지역이 1개(증감률 한 줄)일 때와 2개(두 줄)일 때 아래 글자 높이가 달라져도
+   차트가 알아서 늘고 줄어서 카드 높이는 그대로 유지된다.
+
+   min-height:0 이 필요한 이유 : flex 아이템은 기본적으로 "내용보다 작아지지 않으려" 해서
+   이게 없으면 차트가 안 줄어들고 카드 밖으로 삐져나온다. */
 .forecast3-chart {
   position: relative;
-  height: 180px;
+  flex: 1;
+  min-height: 0;
 }
 
 .forecast3-chart canvas {
@@ -50,11 +66,18 @@
   margin-top: 8px;
 }
 
-/* 한 달 칸. 지역이 2개면 두 줄이 쌓인다 */
+/* 한 달 칸. 지역이 2개면 두 줄이 쌓인다.
+
+   justify-self 와 align-items 가 하는 일이 다르다.
+     justify-self : center -> 두 줄 묶음 전체를 칸 가운데에 둔다 (지금 위치 그대로)
+     align-items  : flex-start -> 묶음 안에서 두 줄을 왼쪽(앞쪽)에 맞춘다
+   전에 쓰던 align-items:center 는 두 줄을 각각 따로 가운데에 놓기 때문에,
+   "경북 +12.3%" 처럼 글자 길이가 다르면 점의 좌우 위치가 줄마다 어긋났다. */
 .f3-caption-cell {
+  justify-self: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 2px;
 }
 
@@ -63,15 +86,15 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--mute);
   white-space: nowrap;
 }
 
-/* 어느 지역인지 알려주는 점 */
+/* 어느 지역인지 알려주는 점. 요약 카드 점(.kpi-dot)과 같은 9px */
 .f3-dot {
-  width: 6px;
-  height: 6px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;   /* 칸이 좁아져도 점이 찌그러지지 않게 */
 }
