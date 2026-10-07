@@ -13,7 +13,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .trend-title {
@@ -35,7 +35,10 @@
    차트 높이를 바꾸려면 여기 height 만 고치면 된다. */
 .trend-chart {
   position: relative;
-  height: 260px;
+  /* 범례 자리를 36px -> 28px 로 줄인 만큼(trend.js 의 legend padding) 높이도 같이 줄였다.
+     페이지에 스크롤이 생기지 않게 하는 게 목적이다.
+     그래도 스크롤이 보이면 이 값을 240 -> 220 처럼 더 내리면 된다. */
+  height: 240px;
 }
 
 .trend-chart canvas {

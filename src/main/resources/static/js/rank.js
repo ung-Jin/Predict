@@ -12,7 +12,13 @@
  *   yoyList : [4.2, 4.1, ...]                // 전년 동월 대비 증감률(%)
  * }
  * 증가가 큰 순서로 정렬돼서 온다.
+ *
+ * 17개를 다 보여주면 글자가 작아져서 읽기 힘들다.
+ * 그래서 "증가 지역" 과 "감소 지역" 을 각각 5개씩만 뽑아서 두 칸으로 보여준다.
  */
+
+//증가 / 감소 각각 몇 개까지 보여줄지
+const RANK_TOP_COUNT = 5;
 
 //막대 색을 정하는 함수. 증가는 분홍, 감소는 파랑, 변화가 없으면 회색
 function getRankBarColor(yoy){
@@ -34,12 +40,68 @@ function getRankValueText(yoy){
   return yoy.toFixed(1) + '%';
 }
 
+/* 증가 지역 5개 골라내기.
+   받은 목록이 "증가가 큰 순서"로 정렬돼 있으므로 앞에서부터 차례로 보면 된다. */
+function pickUpRows(chartData){
+  const rows = [];
+
+  for(let i = 0; i < chartData.names.length; i++){
+    const yoy = chartData.yoyList[i];
+
+    //0 이거나 감소한 지역은 이 칸에 넣지 않는다
+    if(yoy <= 0){
+      continue;
+    }
+
+    rows.push({
+      name : chartData.names[i],
+      fullName : chartData.fullNames[i],
+      yoy : yoy
+    });
+
+    //5개를 채웠으면 그만 본다
+    if(rows.length === RANK_TOP_COUNT){
+      break;
+    }
+  }
+
+  return rows;
+}
+
+/* 감소 지역 5개 골라내기.
+   "많이 줄어든 순서"로 보여줘야 하는데 목록은 증가가 큰 순서라서,
+   i 를 맨 뒤(length - 1)에서 시작해 1 씩 줄이며 거꾸로 본다. */
+function pickDownRows(chartData){
+  const rows = [];
+
+  for(let i = chartData.names.length - 1; i >= 0; i--){
+    const yoy = chartData.yoyList[i];
+
+    //0 이거나 증가한 지역은 이 칸에 넣지 않는다
+    if(yoy >= 0){
+      continue;
+    }
+
+    rows.push({
+      name : chartData.names[i],
+      fullName : chartData.fullNames[i],
+      yoy : yoy
+    });
+
+    if(rows.length === RANK_TOP_COUNT){
+      break;
+    }
+  }
+
+  return rows;
+}
+
 //막대 길이를 정할 때 쓸, 가장 큰 변화폭을 찾는 함수
-function getRankMaxValue(yoyList){
+function getRankMaxValue(rows){
   let maxValue = 0;
 
-  for(let i = 0; i < yoyList.length; i++){
-    const size = Math.abs(yoyList[i]);   //부호를 떼고 크기만 본다
+  for(let i = 0; i < rows.length; i++){
+    const size = Math.abs(rows[i].yoy);   //부호를 떼고 크기만 본다
     if(size > maxValue){
       maxValue = size;
     }
@@ -52,6 +114,41 @@ function getRankMaxValue(yoyList){
   return maxValue;
 }
 
+/* 한 칸(증가 지역 / 감소 지역) 을 통째로 만드는 함수.
+     title    : 칸 머리말 ('증가 지역' / '감소 지역')
+     rows     : pickRankRows 가 골라준 줄 목록
+     maxValue : 선 길이를 100% 로 칠 기준값 (두 칸이 같은 값을 쓴다) */
+function makeRankGroup(title, rows, maxValue){
+  //머리말 점 색은 그 칸의 첫 줄 색을 따라간다 (증가=분홍, 감소=파랑)
+  let groupColor = 'var(--rank-zero)';
+  if(rows.length > 0){
+    groupColor = getRankBarColor(rows[0].yoy);
+  }
+
+  let html = '';
+  html += '<div class="rank-group">';
+  html += '  <p class="rank-group-title">';
+  html += '    <i class="rank-group-dot" style="background:' + groupColor + '"></i>' + title;
+  html += '  </p>';
+
+  for(let i = 0; i < rows.length; i++){
+    const one = rows[i];
+
+    const lineWidth = Math.abs(one.yoy) / maxValue * 100;   //0 ~ 100 사이의 숫자
+    const lineColor = getRankBarColor(one.yoy);
+    const valueText = getRankValueText(one.yoy);
+
+    html += '<div class="rank-row" title="' + one.fullName + ' ' + valueText + '">';
+    html += '  <span class="rank-name">' + one.name + '</span>';
+    html += '  <span class="rank-bar"><i class="rank-line" style="width:' + lineWidth + '%; background:' + lineColor + '"></i></span>';
+    html += '  <span class="rank-value">' + valueText + '</span>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
 //시도별 증감률 목록 그리기
 function drawRank(chartData){
   //그릴 영역을 선택
@@ -61,34 +158,17 @@ function drawRank(chartData){
   //제목의 "8월" 부분을 데이터에 맞춘다
   rankMonth.textContent = chartData.month;
 
-  //가장 큰 변화폭을 100% 로 두고, 나머지 막대 길이를 거기에 비례시킨다
-  const maxValue = getRankMaxValue(chartData.yoyList);
+  //보여줄 줄만 고른다
+  const upRows = pickUpRows(chartData);
+  const downRows = pickDownRows(chartData);
 
-  //17개를 두 열로 나눈다. 한 열에 9줄씩 (17 / 2 를 올림)
-  const rowCount = Math.ceil(chartData.names.length / 2);
-  rankList.style.gridTemplateRows = 'repeat(' + rowCount + ', auto)';
-
-  //한 줄씩 HTML 을 만들어서 이어 붙인다
-  let html = '';
-
-  for(let i = 0; i < chartData.names.length; i++){
-    const name = chartData.names[i];
-    const fullName = chartData.fullNames[i];
-    const yoy = chartData.yoyList[i];
-
-    const barWidth = Math.abs(yoy) / maxValue * 100;   //0 ~ 100 사이의 숫자
-    const barColor = getRankBarColor(yoy);
-    const valueText = getRankValueText(yoy);
-
-    html += '<div class="rank-row" title="' + fullName + ' ' + valueText + '">';
-    html += '  <span class="rank-name">' + name + '</span>';
-    html += '  <span class="rank-bar"><i style="width:' + barWidth + '%; background:' + barColor + '"></i></span>';
-    html += '  <span class="rank-value">' + valueText + '</span>';
-    html += '</div>';
-  }
+  /* 두 칸이 같은 기준으로 길어져야 길이를 서로 비교할 수 있다.
+     칸마다 따로 100% 를 잡으면 -6.6% 와 +4.2% 가 같은 길이로 보여서 잘못 읽힌다. */
+  const maxValue = getRankMaxValue(upRows.concat(downRows));
 
   //만든 HTML 을 한 번에 집어넣는다
-  rankList.innerHTML = html;
+  rankList.innerHTML = makeRankGroup('증가 지역', upRows, maxValue)
+                     + makeRankGroup('감소 지역', downRows, maxValue);
 }
 
 //화면이 열리면 차트 데이터를 조회하는 함수
