@@ -83,24 +83,39 @@ let compareRight = sessionStorage.getItem(REGION_B_KEY) || null;
 async function bootstrap() {
   // /dashboard 경로에서 상대경로('data/...')로 fetch하면 /dashboard/data/...로
   // 잘못 찾아가므로 절대경로 사용. 이 정적 JSON은 팀 DB 연동 전까지의 임시 데이터.
-  const [regionRes, forecastRes] = await Promise.all([
-    fetch('/data/region_data.json'),
-    fetch('/chart-api/rank'), // 지도 색칠용 "시도별 예측 증감률" (rank.js와 같은 엔드포인트)
-  ]);
-  const json = await regionRes.json();
-  const forecastJson = await forecastRes.json();
+  // 지도/도넛/비교표 전부 이 데이터가 있어야 그릴 수 있어서, 못 받아오면 아예 중단함
+  // (kpi.js/rank.js 등 다른 조각들의 axios try/catch 패턴과 동일하게 맞춤).
+  let json;
+  try {
+    const res = await fetch('/data/region_data.json');
+    json = await res.json();
+  } catch (error) {
+    console.log('[map-app.js] 지역 데이터(region_data.json) 조회 시 오류 발생');
+    console.log(error);
+    return;
+  }
 
   ALL_RECORDS = json.records;
   CURRENT_YEAR = json.meta.latestYear;
   CURRENT_MONTH = json.meta.latestMonth;
 
-  // /chart-api/rank는 { names(짧은이름), fullNames(정식 시도명), yoyList, month, year } 형태로
-  // 줌 - 지도는 정식 시도명(SIDO_NAME_TO_CODE 키)을 쓰므로 fullNames 기준으로 맞춰 줌.
-  FORECAST_MONTH = forecastJson.month;
-  FORECAST_REGION_DATA = (forecastJson.fullNames || []).map((sido, i) => ({
-    sido,
-    yoyRate: forecastJson.yoyList[i],
-  }));
+  // 지도 색칠용 "시도별 예측 증감률"(rank.js와 같은 엔드포인트, DB 기반) - 이건 지도
+  // 색칠에만 쓰이므로, 실패해도 도넛/비교표는 위 실측 데이터로 정상적으로 그릴 수 있음.
+  // 그래서 여기서 return하지 않고, 지도만 빈 데이터로(=회색) 넘어가게 함.
+  try {
+    const forecastRes = await fetch('/chart-api/rank');
+    const forecastJson = await forecastRes.json();
+    // { names(짧은이름), fullNames(정식 시도명), yoyList, month, year } 형태로 줌 -
+    // 지도는 정식 시도명(SIDO_NAME_TO_CODE 키)을 쓰므로 fullNames 기준으로 맞춰 줌.
+    FORECAST_MONTH = forecastJson.month;
+    FORECAST_REGION_DATA = (forecastJson.fullNames || []).map((sido, i) => ({
+      sido,
+      yoyRate: forecastJson.yoyList[i],
+    }));
+  } catch (error) {
+    console.log('[map-app.js] 지도 예측 증감률(/chart-api/rank) 조회 시 오류 발생');
+    console.log(error);
+  }
 
   console.log(
     `[map-app.js] 데이터 로드 완료 (기준월: ${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}, 레코드 ${ALL_RECORDS.length}건, 지도 예측 기준월: ${FORECAST_MONTH}, ${FORECAST_REGION_DATA.length}개 시도)`
@@ -137,7 +152,11 @@ function renderAllForMonth(year, month) {
   // (1) 지도: 예측 증감률 기준 색칠 + 범례 + 클릭·드래그 이벤트 등록
   //     (실측이 아니라 FORECAST_REGION_DATA(=/chart-api/rank) 기준 - 위 bootstrap() 주석 참고)
   const mapTitleEl = document.getElementById('mapMetricLabel');
-  if (mapTitleEl) mapTitleEl.textContent = `${FORECAST_MONTH}월 예측 증감률`;
+  if (mapTitleEl) {
+    // FORECAST_MONTH는 /chart-api/rank 조회가 실패하면 null로 남을 수 있음 (위 bootstrap()
+    // 참고) - 그럴 땐 "null월 예측 증감률"처럼 보이지 않게 월 없이 표시
+    mapTitleEl.textContent = FORECAST_MONTH ? `${FORECAST_MONTH}월 예측 증감률` : '예측 증감률';
+  }
 
   mapControls = initRegionMap('mapdiv', {
     regionData: FORECAST_REGION_DATA,
@@ -258,13 +277,20 @@ function updateCompareUI() {
   const hasSelection = !!(compareLeft || compareRight);
 
   const titleEl = document.getElementById('compareSectionTitle');
-  if (titleEl) titleEl.textContent = hasSelection ? '전국 내 위치 (지역 비교)' : '전국 증감률 분포';
+  if (titleEl) {
+    // [2026-10-07] 분포 스트립을 예측 데이터로 바꾸면서 제목도 지도와 같은 "N월 예측" 표현으로 맞춤
+    const stripTitle = FORECAST_MONTH ? `전국 ${FORECAST_MONTH}월 예측 증감률 분포` : '전국 예측 증감률 분포';
+    titleEl.textContent = hasSelection ? '전국 내 위치 (지역 비교)' : stripTitle;
+  }
 
   if (hasSelection) {
     renderCompareRankTable('compareRankTable', compareLeft, compareRight, leftRec, rightRec);
   } else {
+    // [2026-10-07] 지도 색칠 기준(예측 증감률)과 맞춤 - 이전엔 실측(전년동월대비) 기준이라
+    // 지도랑 숫자가 달라 보였음. FORECAST_REGION_DATA는 지도에 넘기는 것과 같은 배열이라
+    // {sido, yoyRate} 모양이 national-strip.js가 기대하는 것과 그대로 맞음.
     // 분포 스트립의 점을 클릭하면 지도에서 그 지역을 클릭한 것과 똑같이 처리됨
-    renderNationalStrip('compareRankTable', getRecordsForMonth(CURRENT_YEAR, CURRENT_MONTH), selectRegionForCompare);
+    renderNationalStrip('compareRankTable', FORECAST_REGION_DATA, selectRegionForCompare);
   }
 
   // (1) sessionStorage에 저장. 값이 없으면(null) 키 자체를 지움 - "빈 문자열"이 아니라
@@ -337,11 +363,20 @@ function renderCompareLeftDonut(sidoName, year, month) {
  * [2026-09-30] compareRight가 null(두 번째 지역을 아직 안 골랐음)이면, 도넛을 지우는 것뿐
  * 아니라 이 도넛이 들어있는 .donut-compact 슬롯 자체를 숨김(is-empty) -> 그만큼 왼쪽 도넛이
  * 넓게 확대되어 보임. 두 번째 지역을 고르는 순간 다시 나타남.
+ * [2026-10-07] 단, 왼쪽(compareLeft)에 이미 지역이 하나 골라져 있는데 오른쪽만 비어있는
+ * 경우(=지도에서 딱 한 곳만 클릭한 상태)엔 오른쪽을 숨기지 않고 "전국 평균"을 대신 채움 -
+ * 그래야 지역을 하나만 클릭해도 "그 지역 vs 전국 평균" 비교가 바로 보임. 둘 다 안 골랐을
+ * 때(초기 화면)는 기존처럼 왼쪽에만 전국 평균이 혼자 뜨고 오른쪽은 숨김 그대로 유지.
  */
 function renderCompareRightDonut(sidoName, year, month) {
   const slotEl = document.getElementById('donut-right')?.closest('.donut-compact');
 
   if (!sidoName) {
+    if (compareLeft) {
+      if (slotEl) slotEl.classList.remove('is-empty');
+      renderNationalAverageDonut(getRecordsForMonth(year, month), 'donut-right');
+      return;
+    }
     clearDonut('donut-right');
     if (slotEl) slotEl.classList.add('is-empty');
     return;

@@ -143,7 +143,11 @@ function initRegionMap(containerId, options) {
       })
     );
 
-    // 확대/축소·처음 위치로 되돌리기 버튼 (홈 버튼은 위의 homeZoomLevel/homeGeoPoint로 복귀)
+    // 확대/축소·처음 위치로 되돌리기 버튼 (홈 버튼은 위의 homeZoomLevel/homeGeoPoint로 복귀).
+    // [2026-10-07] 이 버튼 묶음이 초기엔 차트 안에서 자기 자리(~38px)를 뺏어서 지도가 좁게
+    // 그려지는 문제가 있었는데, 아래 datavalidated 콜백에서 root.resize()를 한 번 호출해주면
+    // 레이아웃이 재계산되면서 지도가 박스 전체 폭을 쓰게 됨 (버튼은 여전히 오른쪽 아래
+    // 구석에 떠서 지도 위에 겹치는 모양 - 어차피 그 자리엔 울릉도/제주 밖이라 가릴 지역이 없음).
     const zoomControl = chart.set('zoomControl', am5map.ZoomControl.new(root, {}));
     zoomControl.homeButton.set('visible', true);
 
@@ -167,6 +171,15 @@ function initRegionMap(containerId, options) {
     polygonSeries.events.once('datavalidated', () => {
       chart.zoomToGeoPoint(HOME_GEO_POINT, HOME_ZOOM_LEVEL, true, 0);
     });
+
+    // [2026-10-07] 지도 캔버스가 박스 폭 전체를 못 쓰는 문제 수정:
+    // 초기 렌더 시 ZoomControl(확대/축소 버튼)이 chart 내부 레이아웃에서 자기 자리(~38px)를
+    // 미리 뺏어가서, 지도 그림이 그만큼 좁게 그려지는 현상이 있었음(사용자 리포트: 왼쪽으로
+    // 드래그하면 색깔바 끝보다 훨씬 앞에서 지도가 짤림). 위에서 autoResize를 꺼둬서 자동
+    // 재계산이 안 됨. root.resize()를 한 번 호출하면 chart가 다시 측정되면서 캔버스가
+    // 박스 폭 전체를 쓰게 되는데, requestAnimationFrame으로는 amCharts의 비동기 draw가
+    // 아직 안 끝난 시점이라 효과가 없음 - setTimeout 100ms로 넉넉하게 미뤄서 호출.
+    setTimeout(() => root.resize(), 100);
 
     polygonSeries.mapPolygons.template.setAll({
       tooltipText: "{name}: {value.formatNumber('+#,##0.0|#,##0.0')}%",
