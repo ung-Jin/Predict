@@ -1,5 +1,390 @@
-/* [4번 소유] detail- 클래스만 여기에 */
-.detail-content{flex-direction:column}
+/* ============================================================================
+   [4번 소유] 상세 데이터 페이지 스타일.
+   공통 색 변수는 common.css(수정 금지) 에 선언되어 있음:
+     --ink  : 본문 글자
+     --mute : 보조 글자
+     --bg   : 페이지 배경
+     --line : 선/테두리
+     --a    : A 지역(파랑)  --b : B 지역(코랄)  --ref : 평균/전국(초록)
+   이 파일에서는 상세 페이지에서만 쓰는 변수/클래스만 추가로 선언한다.
+   ========================================================================== */
 
-/* 1번 추가: 표(왼쪽) + 차트(오른쪽) 가로 배치. 병합할 때 4번이 조정 */
-.detail-body{display:flex;gap:16px;align-items:stretch;min-width:0}
+:root {
+    /* 상세 페이지 전용 보조 색 (연한 배경 / 호버) */
+    --detail-a-soft: #EEF3FB;      /* 선택된 A 행의 배경 */
+    --detail-b-soft: #FDF3EA;      /* 선택된 B 행의 배경 */
+    --detail-row-hover: #F8FAFC;   /* 행 hover */
+    --detail-sub: #94A3B8;         /* 소제목 색 */
+    --detail-track: #EEF2F7;       /* 스파크 바 트랙 */
+}
+
+/* detail.html 의 .content 는 세로 쌓기(필터 → 본문) */
+.detail-content { flex-direction: column; }
+
+/* 좌(표) + 우(차트) 가로 배치
+   grid 를 쓰는 이유: flex 로 하면 오른쪽 차트(Chart.js canvas) 가 자기 내용 크기만큼
+   먼저 공간을 가져가 왼쪽이 0까지 쪼그라드는 현상이 생긴다. grid 의 fr 단위는
+   콘텐츠 크기와 무관하게 비율대로 공간을 나눠주므로 캔버스가 뭘 하든 비율이 지켜진다.
+   1.35fr : 1fr ≈ 좌 58% / 우 42% */
+.detail-body {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+    min-width: 0;
+}
+
+/* 좌측 표가 차지하는 최소 너비 보장.
+   grid 자식에 min-width: 0 을 안 쓰면 안의 긴 테이블이 트랙을 밀어낼 수 있어
+   min-width 는 0 으로 두되, 바깥 grid 비율로 공간을 확정한다. */
+.detail-table  { min-width: 0; }
+.detail-charts { min-width: 0; }
+
+/* ============================================================================
+   필터 바 (상단)
+   ========================================================================== */
+
+.detail-filter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+}
+
+.df-left, .df-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.df-left { flex: 1; }
+
+.df-label {
+    font-size: 12px;
+    color: var(--mute);
+    font-weight: 500;
+    padding: 0 2px;
+}
+
+/* 기간 chip (고정 표시용 — 눌러도 아무 일 안 함) */
+.df-chip-static {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: default;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.df-chip-static:disabled { opacity: 1; }   /* disabled 지만 흐려 보이지 않게 */
+
+/* 지역 선택 트리거 (여러 지역 chip이 들어가는 길쭉한 버튼) */
+.df-regions {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 4px 8px;
+    min-height: 34px;
+    min-width: 240px;
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer;
+    font-family: inherit;
+}
+.df-regions:hover { border-color: var(--mute); }
+.df-chips { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.df-caret { color: var(--mute); font-size: 11px; margin-left: auto; }
+
+/* 선택된 지역 chip (A/B 색 분리) */
+.df-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+}
+.df-chip-a { background: var(--detail-a-soft); color: #3F72B5; }
+.df-chip-b { background: var(--detail-b-soft); color: #C86B3A; }
+.df-chip .df-chip-dot {
+    width: 6px; height: 6px; border-radius: 999px;
+}
+.df-chip-a .df-chip-dot { background: var(--a); }
+.df-chip-b .df-chip-dot { background: var(--b); }
+.df-chip .df-chip-x {
+    background: none; border: none; cursor: pointer;
+    color: currentColor; opacity: 0.55; padding: 0 2px;
+    font-size: 14px; line-height: 1;
+}
+.df-chip .df-chip-x:hover { opacity: 1; }
+
+/* 빈 상태 / 비교 추가 안내 */
+.df-chip-empty { color: var(--mute); font-size: 13px; padding: 0 4px; }
+.df-add-more { color: var(--detail-sub); font-size: 12px; padding: 0 4px; }
+
+/* 오른쪽 CSV 버튼 */
+.df-csv {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: inherit;
+}
+.df-csv:hover { border-color: var(--mute); }
+
+/* ============================================================================
+   지역 선택 모달
+   ========================================================================== */
+
+.df-modal {
+    position: fixed; inset: 0;
+    z-index: 100;
+}
+.df-modal-back {
+    position: absolute; inset: 0;
+    background: transparent;        /* 뒷배경을 가리지 않도록 투명 */
+}
+.df-modal-panel {
+    position: absolute;
+    top: 120px; left: 240px;        /* detail.js 가 트리거 위치에 맞춰 재조정 */
+    width: 380px; max-width: calc(100vw - 32px);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    padding: 14px;
+}
+.df-modal-search {
+    position: relative;
+    margin-bottom: 10px;
+}
+.df-modal-search-ico {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--mute); font-size: 14px; pointer-events: none;
+}
+.df-modal-search input {
+    width: 100%;
+    padding: 8px 12px 8px 30px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+}
+.df-modal-search input:focus { border-color: var(--a); }
+.df-modal-list {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+.df-modal-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--ink);
+    user-select: none;
+}
+.df-modal-item:hover { background: var(--detail-row-hover); }
+.df-modal-check {
+    width: 14px; height: 14px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff;
+    flex-shrink: 0;
+}
+.df-modal-check.on-a { background: var(--a); border-color: var(--a); }
+.df-modal-check.on-b { background: var(--b); border-color: var(--b); }
+.df-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    font-size: 10px; font-weight: 700;
+    color: #fff;
+    margin-left: auto;
+}
+.df-badge-a { background: var(--a); }
+.df-badge-b { background: var(--b); }
+.df-modal-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--mute);
+}
+.df-modal-foot button {
+    border: none; background: none;
+    color: var(--mute); font-size: 12px;
+    cursor: pointer; padding: 0;
+    font-family: inherit;
+}
+.df-modal-foot button:hover { color: var(--ink); }
+
+/* ============================================================================
+   지역별 상세 표
+   ========================================================================== */
+
+.dt-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+}
+.dt-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+.dt-hint  { font-size: 11px; color: var(--detail-sub); margin-left: 6px; }
+
+.dt-tbl-wrap { overflow-x: auto; min-width: 0; }
+
+.dt-tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;   /* 숫자 자릿수 고정 (표가 흔들리지 않음) */
+}
+.dt-tbl thead th {
+    text-align: right;
+    font-weight: 500;
+    color: var(--mute);
+    font-size: 11px;
+    padding: 6px 6px 8px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+.dt-tbl thead th.dt-col-sido { text-align: left; padding-left: 4px; }
+.dt-sub {
+    display: block;
+    font-weight: 400;
+    color: var(--detail-sub);
+    font-size: 10px;
+    margin-top: 2px;
+}
+.dt-col-sido { width: 24%; }
+.dt-col-fc   { width: 22%; }
+.dt-col-yoy  { width: 13%; }
+.dt-col-mape { width: 18%; }
+.dt-col-rmse { width: 11%; }
+.dt-col-mae  { width: 11%; }
+
+.dt-tbl tbody td {
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    text-align: right;
+}
+.dt-tbl tbody td.dt-sido-cell { text-align: left; padding-left: 4px; }
+
+/* 선택된 행 하이라이트 */
+.dt-tbl tbody tr { cursor: pointer; }
+.dt-tbl tbody tr:hover:not(.dt-row-a):not(.dt-row-b) { background: var(--detail-row-hover); }
+.dt-tbl tbody tr.dt-row-a { background: var(--detail-a-soft); }
+.dt-tbl tbody tr.dt-row-b { background: var(--detail-b-soft); }
+
+/* 체크박스 + 뱃지 + 이름 */
+.dt-sido-inner { display: inline-flex; align-items: center; gap: 8px; }
+.dt-check {
+    width: 13px; height: 13px;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff;
+    flex-shrink: 0;
+}
+.dt-check.on-a { background: var(--a); border-color: var(--a); }
+.dt-check.on-b { background: var(--b); border-color: var(--b); }
+.dt-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 3px;
+    font-size: 9px; font-weight: 700; color: #fff;
+}
+.dt-badge-a { background: var(--a); }
+.dt-badge-b { background: var(--b); }
+.dt-name { font-weight: 500; color: var(--ink); font-size: 12px; }
+
+/* 8월 예측 값 + 스파크 바 (상대적 크기 시각화) */
+.dt-fc-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.dt-fc-val { font-weight: 500; color: var(--ink); min-width: 50px; text-align: right; }
+.dt-spark {
+    width: 60%; max-width: 90px;
+    height: 5px;
+    background: var(--detail-track);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+.dt-spark > i {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    border-radius: 3px;
+    background: #B7C6D9;   /* 기본(미선택) 색 */
+}
+.dt-spark.on-a > i { background: var(--a); }
+.dt-spark.on-b > i { background: var(--b); }
+
+/* 전년대비 (상승/하락/유지) */
+.dt-yoy {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    justify-content: flex-end;
+}
+.dt-yoy-up   { color: #C86B3A; }
+.dt-yoy-down { color: #3F72B5; }
+.dt-yoy-flat { color: var(--mute); }
+.dt-yoy-dot {
+    width: 10px; height: 10px; border-radius: 3px;
+    display: inline-block;
+}
+.dt-yoy-up   .dt-yoy-dot { background: var(--b); }
+.dt-yoy-down .dt-yoy-dot { background: var(--a); }
+.dt-yoy-flat .dt-yoy-dot { background: #CBD5E1; }
+
+/* MAPE 셀의 가로 바 */
+.dt-mape-cell { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.dt-mape-bar {
+    width: 60px; height: 4px;
+    background: var(--detail-track);
+    border-radius: 2px;
+    position: relative;
+}
+.dt-mape-bar > i {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    border-radius: 2px; background: var(--a);
+}
+
+.dt-foot {
+    font-size: 11px;
+    color: var(--detail-sub);
+    padding: 8px 4px 0;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.dt-empty td {
+    text-align: center;
+    color: var(--mute);
+    padding: 24px 0;
+}
+
+/* ============================================================================
+   반응형: 좁은 화면에서는 좌우 2단을 세로로 쌓음
+   ========================================================================== */
+@media (max-width: 1100px) {
+    .detail-body { grid-template-columns: 1fr; }
+}

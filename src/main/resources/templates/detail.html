@@ -1,33 +1,52 @@
 <!DOCTYPE html>
-<!-- [4번 소유] 상세 데이터 페이지. 사이드바와 헤더는 1번이 만든 조각을 그대로 씁니다. -->
+<!--
+  [4번 소유] 상세 데이터 페이지 레이아웃.
+  - 사이드바/헤더/우측 차트 영역은 1번이 만든 조각(fragment)을 그대로 썼다.
+  - Chart.js 는 상단에서 한 번만 로드하고 detail.js, detail-charts.js 둘 다 전역으로 쓴다.
+  - detail.js 는 가장 아래에서 로드 — DOM이 다 만들어진 뒤에 캔버스에 접근해야 하기 때문이다.
+-->
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <title>상세 데이터 - 전력사용량 예측</title>
-  <link rel="stylesheet" th:href="@{/css/common.css}">   <!-- 1번 (수정 금지) -->
-  <link rel="stylesheet" th:href="@{/css/detail-charts.css}"> <!-- 1번 추가-->
-  <link rel="stylesheet" th:href="@{/css/detail.css}">   <!-- 4번 -->
+
+  <!-- 공통 스타일 (1번 소유, 수정 금지) -->
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <!-- 우측 차트 영역 전용 스타일 (1번 소유) -->
+  <link rel="stylesheet" th:href="@{/css/detail-charts.css}">
+  <!-- 상세 페이지 좌측(필터 + 표) + 모달/히트맵/차트 색 변수 (4번) -->
+  <link rel="stylesheet" th:href="@{/css/detail.css}">
+
+  <!-- Chart.js : 우측 차트(1번 팀원 소유 detail-charts.js)에서 사용. 여기서 한 번만 로드. -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.2/dist/axios.min.js"></script>   <!-- 1번 추가: 서버 요청용 -->
+
+  <!-- axios : 좌측 표(/detail-api/table) 호출용. 팀 다른 영역과 통일. -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js"></script>
+
 </head>
 <body>
 <div class="app">
-  <aside th:replace="~{layout/sidebar :: sidebar('detail')}"></aside>     <!-- 1번 -->
-  <div class="main">
-    <header th:replace="~{layout/header :: header}"></header>              <!-- 1번 -->
-    
-    <div class="content detail-content">
+  <aside th:replace="~{layout/sidebar :: sidebar('detail')}"></aside>
 
-      <div th:replace="~{fragments/detail_filter :: detail_filter}"></div>  <!-- 4번: 지역 드롭다운 -->
-      <!-- 1번 추가: 표(왼쪽) + 차트(오른쪽) 가로 배치. 병합할 때 4번이 조정 -->
+  <div class="main">
+    <header th:replace="~{layout/header :: header}"></header>
+
+    <div class="content detail-content">
+      <!-- 상단: 기간/지역 드롭다운 + CSV 버튼 -->
+      <div th:replace="~{fragments/detail_filter :: detail_filter}"></div>
+
+      <!-- 좌(표) + 우(차트 3종)의 가로 배치 -->
       <div class="detail-body">
-        <div th:replace="~{fragments/detail_table :: detail_table}"></div>    <!-- 4번: 지역별 표 -->
-        <div th:replace="~{fragments/detail_charts :: detail_charts}"></div>  <!-- 1번 대신 작업: 우측 차트 3종 -->
+        <div th:replace="~{fragments/detail_table :: detail_table}"></div>
+        <div th:replace="~{fragments/detail_charts :: detail_charts}"></div>
       </div>
     </div>
   </div>
 </div>
 
-<script th:src="@{/js/detail-charts.js}"></script>   <!-- 1번 추가 -->
+<!-- 1번이 둔 뼈대 (현재는 TODO만 있음). 공존해도 문제 없음. -->
+<script th:src="@{/js/detail-charts.js}"></script>
+<!-- 상세 페이지의 실제 동작(선택 상태, 표 그리기, 차트 그리기, 모달)을 담당 -->
+<script th:src="@{/js/detail.js}"></script>
 </body>
 </html>
