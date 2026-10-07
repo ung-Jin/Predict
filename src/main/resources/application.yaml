@@ -7,6 +7,18 @@ spring:
     url: jdbc:log4jdbc:mariadb://192.168.30.91/project-2
     username: user
     password: mariadb
+  # [2026-10-06] 개발 중 정적 리소스 캐시 비활성화.
+  # 이게 없으면 /static/ 아래 js/css가 브라우저에 캐시돼서, 소스를 바꿔도 하드리프레시
+  # 하지 않으면 반영이 안 됨. 운영 배포 전엔 이 블록을 지우거나 period를 늘려야 함.
+  web:
+    resources:
+      cache:
+        period: 0
+      chain:
+        cache: false
+  # [2026-10-06] Thymeleaf 템플릿 캐시도 끔 (html 조각 수정이 바로 반영되게)
+  thymeleaf:
+    cache: false
 
 #쿼리문이 있는 mapper 파일 위치 지정, classpath는 resources 폴더를 의미함
 mybatis:

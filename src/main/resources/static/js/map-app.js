@@ -59,6 +59,16 @@ let CURRENT_YEAR = null;   // 화면에 그리고 있는 기준 연 (초기값 =
 let CURRENT_MONTH = null;  // 화면에 그리고 있는 기준 월 (초기값 = JSON meta.latestMonth)
 let mapControls = null;    // initRegionMap()이 리턴한 지도 조작 객체 (setCompareSelection 등)
 
+// [2026-10-07] 지도 색칠 기준 변경: "전년동월대비 증감률"(실측) -> "8월 예측 증감률"(예측).
+// 예측 대시보드인데 지도만 과거 실측 기준이라 취지와 안 맞는다는 피드백으로, 왼쪽 "시도별 8월
+// 예측 증감률" 카드(rank.js)가 쓰는 것과 같은 엔드포인트(/chart-api/rank)에서 받아옴.
+// 지도 자체(색 계산·줌·클릭 로직 - map.js)는 "어떤 필드를 색칠에 쓸지" 모르는 범용 구조라
+// 전혀 안 건드려도 됨 - 여기서 regionData로 뭘 넘기느냐만 바뀜.
+// 지도 아래 비교표/도넛/분포 스트립은 여전히 실측(ALL_RECORDS) 기준 그대로 둠 - 그쪽은
+// 총사용량·1인당 사용량처럼 예측 데이터가 없는 지표도 같이 쓰고 있어서 그대로 유지.
+let FORECAST_REGION_DATA = []; // [{ sido: '서울특별시', yoyRate: -6.6 }, ...] - /chart-api/rank 가공 결과
+let FORECAST_MONTH = null;     // 예측 기준월 (예: 8)
+
 // 비교 슬롯. 순위표 왼쪽·오른쪽 컬럼 + 왼쪽·오른쪽 도넛이 모두 이 두 값을 바라봄.
 // 매번 sessionStorage를 직접 읽으면 코드가 지저분해지니, 페이지 로드 시 딱 한 번
 // sessionStorage에서 읽어와 이 변수들에 담아두고, 평소엔 이 변수로 계산하다가
@@ -67,22 +77,33 @@ let mapControls = null;    // initRegionMap()이 리턴한 지도 조작 객체 
 let compareLeft = sessionStorage.getItem(REGION_A_KEY) || null;
 let compareRight = sessionStorage.getItem(REGION_B_KEY) || null;
 
-
 // ---------------------------------------------------------------------------
 // 진입점: 페이지 로드가 끝나면 실행됨
 // ---------------------------------------------------------------------------
 async function bootstrap() {
   // /dashboard 경로에서 상대경로('data/...')로 fetch하면 /dashboard/data/...로
   // 잘못 찾아가므로 절대경로 사용. 이 정적 JSON은 팀 DB 연동 전까지의 임시 데이터.
-  const res = await fetch('/data/region_data.json');
-  const json = await res.json();
+  const [regionRes, forecastRes] = await Promise.all([
+    fetch('/data/region_data.json'),
+    fetch('/chart-api/rank'), // 지도 색칠용 "시도별 예측 증감률" (rank.js와 같은 엔드포인트)
+  ]);
+  const json = await regionRes.json();
+  const forecastJson = await forecastRes.json();
 
   ALL_RECORDS = json.records;
   CURRENT_YEAR = json.meta.latestYear;
   CURRENT_MONTH = json.meta.latestMonth;
 
+  // /chart-api/rank는 { names(짧은이름), fullNames(정식 시도명), yoyList, month, year } 형태로
+  // 줌 - 지도는 정식 시도명(SIDO_NAME_TO_CODE 키)을 쓰므로 fullNames 기준으로 맞춰 줌.
+  FORECAST_MONTH = forecastJson.month;
+  FORECAST_REGION_DATA = (forecastJson.fullNames || []).map((sido, i) => ({
+    sido,
+    yoyRate: forecastJson.yoyList[i],
+  }));
+
   console.log(
-    `[map-app.js] 데이터 로드 완료 (기준월: ${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}, 레코드 ${ALL_RECORDS.length}건)`
+    `[map-app.js] 데이터 로드 완료 (기준월: ${CURRENT_YEAR}-${String(CURRENT_MONTH).padStart(2, '0')}, 레코드 ${ALL_RECORDS.length}건, 지도 예측 기준월: ${FORECAST_MONTH}, ${FORECAST_REGION_DATA.length}개 시도)`
   );
 
   renderAllForMonth(CURRENT_YEAR, CURRENT_MONTH);
@@ -109,18 +130,19 @@ function formatYearMonth(year, month) {
 // 특정 연/월 기준으로 지도·도넛·순위표를 한꺼번에 그리는 함수
 // ---------------------------------------------------------------------------
 function renderAllForMonth(year, month) {
-  const monthData = getRecordsForMonth(year, month);
-
   // 도넛 카드 헤더 오른쪽에 기준월 한 번만 표시 (개별 도넛 캡션에서는 뺌)
   const refEl = document.getElementById('donutRefMonth');
   if (refEl) refEl.textContent = `· ${formatYearMonth(year, month)} 기준`;
 
-  // (1) 지도: 증감률 기준 색칠 + 범례 + 클릭·드래그 이벤트 등록
+  // (1) 지도: 예측 증감률 기준 색칠 + 범례 + 클릭·드래그 이벤트 등록
+  //     (실측이 아니라 FORECAST_REGION_DATA(=/chart-api/rank) 기준 - 위 bootstrap() 주석 참고)
+  const mapTitleEl = document.getElementById('mapMetricLabel');
+  if (mapTitleEl) mapTitleEl.textContent = `${FORECAST_MONTH}월 예측 증감률`;
+
   mapControls = initRegionMap('mapdiv', {
-    regionData: monthData,
+    regionData: FORECAST_REGION_DATA,
     metric: 'yoyRate',
     onRegionClick: selectRegionForCompare,   // 클릭: 첫 클릭=왼쪽, 두번째 클릭=오른쪽, 그 다음부턴 밀기
-    onRegionDropToSlot: selectRegionToSlot,  // 드래그: 놓은 칸(왼쪽/오른쪽)에 바로 지정
   });
 
   // (2) 도넛: 공통 범례(한 번만) + 도넛 2개
@@ -169,10 +191,8 @@ function selectRegionForCompare(sidoName) {
 }
 
 /**
- * 지도의 지역을 순위표 왼쪽/오른쪽 컬럼 위로 드래그해서 놓았을 때 호출됨
- * (map.js가 document 레벨의 pointerup에서 판단해 onRegionDropToSlot 콜백으로 넘겨줌)
- * 동작 규칙: 놓은 칸에 그 지역이 그대로 들어감 (밀기 없음, 클릭과 달리 순서 규칙을 안 탐).
- * 따라서 놓은 쪽 도넛만 갱신하면 됨.
+ * 특정 슬롯(left/right)을 지정해서 그 자리에 지역을 직접 꽂음 (밀기 없음, 순서 규칙 안 탐).
+ * handleRegionChangeRequest(칩 드롭다운)에서 사용. 놓은 쪽 도넛만 갱신하면 됨.
  */
 function selectRegionToSlot(sidoName, slot) {
   if (slot === 'left') {
@@ -184,6 +204,31 @@ function selectRegionToSlot(sidoName, slot) {
     updateCompareUI();
     renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
   }
+}
+
+/**
+ * [2026-10-06] 칩(fragments/chips.html)의 드롭다운에서 지역을 직접 골랐을 때 호출됨
+ * (chip.js가 'region:change-request' 이벤트로 요청을 보내옴).
+ *
+ * 칩이 sessionStorage를 직접 고치지 않고 굳이 이쪽에 요청하는 이유: 선택 상태를 들고 있는
+ * 건 이 파일이라, 칩이 혼자 값을 바꿔버리면 지도 테두리·도넛·순위표는 그대로 남아서
+ * 화면끼리 어긋남. 그래서 "지도를 클릭했을 때와 똑같은 경로"로 처리되게 넘겨받음.
+ */
+function handleRegionChangeRequest(e) {
+  if (!mapControls) return; // 지도가 아직 안 그려졌으면(데이터 로딩 중) 무시
+
+  const { slot, sido } = e.detail;
+
+  // 같은 지역이 A/B 양쪽에 동시에 들어가면 "서울 vs 서울"을 비교하는 꼴이 되므로,
+  // 고른 지역이 반대쪽에 이미 있으면 그쪽을 비워서 자리를 옮기는 것처럼 동작하게 함.
+  if (sido && slot === 'left' && sido === compareRight) compareRight = null;
+  if (sido && slot === 'right' && sido === compareLeft) compareLeft = null;
+
+  selectRegionToSlot(sido, slot);
+
+  // 위에서 반대쪽이 비워졌을 수도 있으니 두 도넛 다 다시 그림
+  renderCompareLeftDonut(compareLeft, CURRENT_YEAR, CURRENT_MONTH);
+  renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
 }
 
 
@@ -207,7 +252,20 @@ function updateCompareUI() {
   const leftRec  = compareLeft  ? getRecord(compareLeft,  CURRENT_YEAR, CURRENT_MONTH) : null;
   const rightRec = compareRight ? getRecord(compareRight, CURRENT_YEAR, CURRENT_MONTH) : null;
 
-  renderCompareRankTable('compareRankTable', compareLeft, compareRight, leftRec, rightRec);
+  // [2026-10-06] 지도 아래 한 자리를 상황에 따라 바꿔 끼움.
+  //   아무것도 안 골랐을 때 비교표를 띄워봐야 "-"만 가득한 빈 표라 의미가 없어서,
+  //   그 자리에 "전국 증감률 분포"를 대신 보여주고, 지역을 고르는 순간 비교표로 교체함.
+  const hasSelection = !!(compareLeft || compareRight);
+
+  const titleEl = document.getElementById('compareSectionTitle');
+  if (titleEl) titleEl.textContent = hasSelection ? '전국 내 위치 (지역 비교)' : '전국 증감률 분포';
+
+  if (hasSelection) {
+    renderCompareRankTable('compareRankTable', compareLeft, compareRight, leftRec, rightRec);
+  } else {
+    // 분포 스트립의 점을 클릭하면 지도에서 그 지역을 클릭한 것과 똑같이 처리됨
+    renderNationalStrip('compareRankTable', getRecordsForMonth(CURRENT_YEAR, CURRENT_MONTH), selectRegionForCompare);
+  }
 
   // (1) sessionStorage에 저장. 값이 없으면(null) 키 자체를 지움 - "빈 문자열"이 아니라
   //     아예 없는 상태로 둬야, 읽는 쪽에서 `sessionStorage.getItem(...)`이 null을 리턴해서
@@ -306,3 +364,6 @@ function renderCompareRightDonut(sidoName, year, month) {
 // 실행 시작
 // ---------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', bootstrap);
+
+// 칩 드롭다운에서 직접 지역을 고른 경우 (chip.js -> 이 파일)
+document.addEventListener('region:change-request', handleRegionChangeRequest);

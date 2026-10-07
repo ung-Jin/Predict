@@ -35,18 +35,21 @@
      ============================================================================ -->
 <div th:fragment="map" class="card map">
 
-  <h3 class="map-title">전국 전력사용량 지도 (전년동월대비 증감률)</h3>
+  <!-- 괄호 안 지표명은 map-app.js가 부트스트랩 시 채움 (현재: "N월 예측 증감률" - /chart-api/rank 기준) -->
+  <h3 class="map-title">전국 전력사용량 지도 (<span id="mapMetricLabel">예측 증감률</span>)</h3>
 
-  <!-- amCharts5가 이 div에 SVG로 지도를 그림. 높이는 map.css의 #mapdiv{height:380px}. -->
+  <!-- amCharts5가 이 div에 SVG로 지도를 그림. 높이는 map.css의 #mapdiv{height}. -->
   <div id="mapdiv"></div>
 
   <!-- 지도 색상 범례 (감소←파랑↔분홍→증가). 순수 HTML로 그림 (amCharts 기본 HeatLegend는
        단방향 그라데이션이라, diverging 스케일에는 안 맞아서 map.js에서 직접 innerHTML로 채움). -->
   <div id="mapLegend"></div>
 
-  <!-- "전국 내 위치" 순위 비교표. 지도에서 지역을 클릭하거나, 이 표의 왼쪽/오른쪽 컬럼
-       위로 지역을 드래그해서 놓으면 그 자리에 채워짐 (표 내부에 data-slot 속성 있음). -->
-  <h4 class="map-compare-title">전국 내 위치 (지역 비교)</h4>
+  <!-- 지도 하단 영역. 한 자리를 상황에 따라 둘 중 하나로 바꿔 끼움 (map-app.js가 결정):
+         - 아직 아무 지역도 안 골랐을 때 : "전국 증감률 분포" 스트립 (national-strip.js)
+         - 지역을 하나라도 골랐을 때    : "전국 내 위치" 순위 비교표 (compare-rank.js)
+       제목(h4)도 같이 바뀌므로 id를 달아둠. -->
+  <h4 class="map-compare-title" id="compareSectionTitle">전국 증감률 분포</h4>
   <div id="compareRankTable"></div>
 
   <!-- ================= amCharts5 CDN (지도 전용) =================
@@ -59,10 +62,15 @@
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 
   <!-- ================= 우리 모듈 =================
-       순서 중요! sido-map-codes -> map -> compare-rank -> map-app 순.
-       (뒤 파일이 앞 파일의 함수/상수를 사용) -->
-  <script th:src="@{/js/sido-map-codes.js}"></script>
-  <script th:src="@{/js/map.js}"></script>
-  <script th:src="@{/js/compare-rank.js}"></script>
-  <script th:src="@{/js/map-app.js}"></script>
+       순서 중요! sido-map-codes -> map -> compare-rank -> national-strip -> map-app 순.
+       (뒤 파일이 앞 파일의 함수/상수를 사용:
+        national-strip은 map.js의 divergingHex와 compare-rank.js의 formatSignedPercent를 씀)
+       [2026-10-06] v=timestamp 쿼리스트링으로 캐시 버스팅 - 매 요청마다 다른 URL이라
+       브라우저가 이전 버전을 캐시해도 못 쓰고 반드시 서버에서 새로 받아옴.
+       (운영 배포 시 리소스가 매번 다시 다운로드되므로, 운영에선 ?v=릴리스번호 등 고정값으로 바꿔야 함) -->
+  <script th:src="@{/js/sido-map-codes.js(v=${#dates.createNow().time})}"></script>
+  <script th:src="@{/js/map.js(v=${#dates.createNow().time})}"></script>
+  <script th:src="@{/js/compare-rank.js(v=${#dates.createNow().time})}"></script>
+  <script th:src="@{/js/national-strip.js(v=${#dates.createNow().time})}"></script>
+  <script th:src="@{/js/map-app.js(v=${#dates.createNow().time})}"></script>
 </div>

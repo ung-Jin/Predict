@@ -8,12 +8,6 @@
  *
  * 지도 하단 "전국 내 위치" 순위 비교표.
  *
- * 별도의 "여기로 드래그하세요" 카드를 따로 두지 않고, 이 표 자체의
- * 왼쪽 컬럼 전체 / 오른쪽 컬럼 전체가 곧 드롭 영역(data-slot)이자
- * 결과가 표시되는 자리임 ("왼쪽 표 전체 vs 오른쪽 표 전체" 느낌).
- * 지도에서 지역을 드래그해서 이 컬럼 위에 놓으면 map.js가
- * onRegionDropToSlot(sido, 'left'|'right')을 호출해서 바로 반영됨.
- *
  * 구성:
  *  - 헤더: 왼쪽 지역명 vs 오른쪽 지역명 (아직 선택 안 됐으면 "왼쪽"/"오른쪽" 표시)
  *  - 지표별 행(가운데 라벨 컬럼 기준으로 좌우 대칭):
@@ -63,7 +57,7 @@ function renderCompareRankTable(containerId, leftSido, rightSido, leftRec, right
 
   el.innerHTML = `
     <div class="compare-grid">
-      <div class="compare-side compare-col${leftRec ? ' is-filled' : ''}" data-slot="left">
+      <div class="compare-side compare-col" data-slot="left">
         <div class="compare-col-header side-left">${leftHeader}</div>
         ${leftCells}
       </div>
@@ -71,12 +65,12 @@ function renderCompareRankTable(containerId, leftSido, rightSido, leftRec, right
         <div class="compare-mid-header">vs</div>
         ${midCells}
       </div>
-      <div class="compare-side compare-col${rightRec ? ' is-filled' : ''}" data-slot="right">
+      <div class="compare-side compare-col" data-slot="right">
         <div class="compare-col-header side-right">${rightHeader}</div>
         ${rightCells}
       </div>
     </div>
-    <p class="compare-drop-hint">지도에서 지역을 클릭하거나, 이 표의 왼쪽/오른쪽 위로 직접 드래그해서 놓으세요</p>
+    <p class="compare-drop-hint">지도 클릭 또는 위쪽 지역비교 칸에서 선택 (최대 2곳)</p>
   `;
 }
 
