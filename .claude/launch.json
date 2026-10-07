@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "predict-dashboard",
+      "runtimeExecutable": "D:\\01-STUDY\\dev-01\\workspace_spring\\Predict\\gradlew.bat",
+      "runtimeArgs": ["bootRun"],
+      "port": 8080
+    }
+  ]
+}
