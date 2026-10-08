@@ -21,7 +21,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard Vari
 .row{display:flex;gap:16px}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}
 .sidebar{width:80px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:12px}
-.sidebar .sidebar-logo{width:40px;height:40px;border-radius:10px;background:#EAF2FC;color:#3F72B5;display:flex;align-items:center;justify-content:center;margin-bottom:22px;cursor:pointer;font-size:inherit}
+.sidebar .sidebar-logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#334B70,#243652);color:#F5F9FE;display:flex;align-items:center;justify-content:center;margin-bottom:22px;cursor:pointer;box-shadow:0 3px 8px rgba(42,54,84,.12);transition:transform .16s ease,box-shadow .16s ease}
+.sidebar-logo-icon{display:block;flex-shrink:0}
+.sidebar-logo-forecast{stroke:#8BD6BC}
+.sidebar-logo-point{fill:#8BD6BC}
+.sidebar .sidebar-logo:hover{transform:translateY(-1px);box-shadow:0 5px 10px rgba(42,54,84,.16)}
+.sidebar .sidebar-logo:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.sidebar .sidebar-logo{transition:none}.sidebar .sidebar-logo:hover{transform:none}}
 .sidebar a{width:64px;height:60px;border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--mute);text-decoration:none}
 .sidebar a.on{background:#EAF2FC;color:#2F5F9E;font-weight:700}
 .header{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;color:var(--mute)}

@@ -2,7 +2,16 @@
 <aside th:fragment="sidebar(menu)" class="sidebar">
   <a href="/dashboard" class="sidebar-logo"
      onclick="sessionStorage.removeItem('selectedRegionA');sessionStorage.removeItem('selectedRegionB');"
-     aria-label="홈 (전국 지도)">⚡</a>
+     aria-label="홈 (전국 지도)">
+    <svg class="sidebar-logo-icon" width="28" height="28" viewBox="0 0 28 28"
+         fill="none" aria-hidden="true" focusable="false">
+      <path d="M4 17h4l3-7 4 11 4-15 3 11"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path class="sidebar-logo-forecast" d="M22 17h3"
+            stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1 2.5"/>
+      <circle class="sidebar-logo-point" cx="24" cy="7" r="2"/>
+    </svg>
+  </a>
   <a href="/dashboard" th:classappend="${menu == 'dashboard'} ? 'on' : ''">대시보드</a>
   <a href="/detail" th:classappend="${menu == 'detail'} ? 'on' : ''">상세 데이터</a>
 </aside>
