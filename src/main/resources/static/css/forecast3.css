@@ -64,16 +64,24 @@
   margin-top: 8px;
 }
 
-/* 한 달 칸. 지역이 2개면 한 줄에 가로로 나란히 (A지역 B지역 순서).
-   [2026-10-08] 세로(column) -> 가로(row) 로 변경. 위 bar 가 월 묶음 안에서 A/B 가 좌/우로
-   나란히 서는 모양과 맞춤. 가로로 바뀌면서 캡션 세로가 절반이 되고, 그만큼 .forecast3-chart
-   의 flex:1 이 흡수해 bar 가 커진다. */
+/* 한 달 칸. [2026-10-08 재조정] bar 자리 수(2N: 작년/예측 × 지역) 만큼의 grid 로 두고,
+   JS 가 짝수 자리(예측 bar 아래)에만 지역 글자를 넣고 홀수 자리(작년 bar 아래)는 비운다 →
+   지역명이 각 "예측" bar 바로 아래에 세로 정렬된다. grid-template-columns 은 JS 가 셀마다
+   inline 으로 지정. */
 .f3-caption-cell {
-  justify-self: center;
-  display: flex;
-  flex-direction: row;
+  justify-self: stretch;
+  display: grid;
   align-items: center;
-  gap: 14px;
+  justify-items: center;
+  width: 100%;
+}
+.f3-caption-spacer {
+  display: block;
+}
+/* grid 1fr 셀이 자식의 min-content 때문에 밀려 비균등해지는 걸 방지 →
+   네 칸이 똑같이 분할되어 bar 와 캡션이 정확히 세로 정렬된다. */
+.f3-caption-cell > * {
+  min-width: 0;
 }
 
 /* "서울 -6.6%" 한 덩어리 */
