@@ -30,12 +30,12 @@
     display: grid;
     grid-template-columns: 1.35fr 1fr;
     gap: 16px;
-    /* [2026-10-08] grid 자식 둘(.detail_table, .detail-charts) 이 자동으로 같은 높이로
-       stretch 되는데, 오른쪽 차트 contents 가 선택 수(히트맵 블록 개수 등)에 따라 세로가
-       변해 전체 grid 높이가 밀렸다 (767 -> 751px). align-items:start 로 두면 두 열이
-       각자 자기 contents 높이만 쓰고 서로 영향 안 준다 - 왼쪽 표는 선택과 무관하게
-       항상 같은 높이. */
-    align-items: start;
+    /* [2026-10-08 재조정] 좌(17행 자연 신장) ↔ 우(차트 3장) 세로 끝이 어긋나던 문제.
+       align-items:stretch 로 두 열의 세로 높이를 같게 묶는다. 좌측 표가 "주"가 되어
+       자연 신장한 높이를 우측이 수용(.detail-charts height:100%, 카드 flex:1 1 0 분배).
+       예전엔 start 로 두는 대신 히트맵의 aspect-ratio 가 선택 수에 따라 전체 세로를
+       흔들었는데, 그 aspect-ratio 를 detail-charts.css 에서 제거하면서 stretch 복귀 가능. */
+    align-items: stretch;
     min-width: 0;
 }
 
@@ -434,4 +434,7 @@
    ========================================================================== */
 @media (max-width: 1100px) {
     .detail-body { grid-template-columns: 1fr; }
+    /* 세로 스택에서는 .detail-charts height:100% 가 "좌측 표 높이" 가 아닌
+       "부모의 자연 신장" 을 따르므로 auto 로 되돌려 각 카드가 자기 콘텐츠로 신장. */
+    .detail-charts { height: auto; }
 }

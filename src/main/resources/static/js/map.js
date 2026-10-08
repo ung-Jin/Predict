@@ -64,21 +64,21 @@ function clamp01(t) {
  * @param {number} scaleMaxIncrease        - 이번 달 최대 증가폭(양수)
  */
 function divergingHex(value, scaleMinDecrease, scaleMaxIncrease) {
-  if (value == null) return '#F5F9FE'; // 데이터 없음: 페이지 배경과 같은 가장 옅은 색
-  // [2026-10-07] 변화 없음(0%)을 흰색으로 칠했더니 지도/카드 배경이 다 흰색이라 그 지역만
-  // 아예 안 보이는 문제가 있었음 - 옅은 하늘색으로 바꿔서 "변화가 거의 없다"는 느낌은
-  // 유지하면서도 눈에 보이게 함. 감소 쪽 그라데이션의 가장 연한 색(#DCE7F5)과 같은 값이라,
-  // 음수 쪽에서 0%로 다가갈 때 색이 끊기지 않고 자연스럽게 이어짐.
-  if (value === 0) return '#F5F7FB';  // 거의 흰색 - 시안의 '0' 지점에 가까움
+  // [2026-10-08] 0% 베이스 색 흐름:
+  //   흰빛(#F5F7FB, 초기) → 진한 회색(#E3E7EE, 중간값 구분 목적) → 밝은 회색(#EEF1F6, 현재).
+  //   #E3E7EE 는 0% 지역이 "낮은 수치" 지역과 거의 같은 톤이라 구분이 안 됐다. 흰색 쪽으로
+  //   살짝 끌어올려(0%≈거의 흰) 작은 변화도 lerp 결과가 뚜렷하게 보이도록 함.
+  if (value == null) return '#EEF1F6';
+  if (value === 0) return '#EEF1F6';
 
   if (value < 0) {
-    // 감소 쪽: 하늘색(0%에 가까움) -> 파란색(감소폭 최대)
+    // 감소 쪽: 밝은 회색(0%에 가까움) -> 파란색(감소폭 최대)
     const t = scaleMinDecrease !== 0 ? clamp01(value / scaleMinDecrease) : 0;
-    return lerpHex(0xF5F7FB, 0x6E99D2, t);  // 시안 파랑 ramp (연 #F5F7FB ~ 진 #6E99D2)
+    return lerpHex(0xEEF1F6, 0x6E99D2, t);
   }
-  // 증가 쪽: 연분홍색(0%에 가까움) -> 진분홍색(증가폭 최대)
+  // 증가 쪽: 밝은 회색(0%에 가까움) -> 살구색(증가폭 최대)
   const t = scaleMaxIncrease !== 0 ? clamp01(value / scaleMaxIncrease) : 0;
-  return lerpHex(0xF5F7FB, 0xE68B5F, t);  // 시안 살구 ramp (연 #F5F7FB ~ 진 #E68B5F)
+  return lerpHex(0xEEF1F6, 0xE68B5F, t);
 }
 
 /**
@@ -282,6 +282,8 @@ function initRegionMap(containerId, options) {
         if (isSelected) {
           // [2026-10-08 재설계] A/B 색 배경은 지도 색과 섞여 헷갈려서,
           // "흰 배경 + A/B 색 테두리 + 진한 남색 글자" 캡슐로 변경.
+          // [2026-10-08 추가] 선택 테두리(섬 포함) 제거 후, 캡슐에 미세 drop-shadow 로
+          //   "떠오름" 느낌만 더해서 선택 상태를 식별 가능하게 함.
           sprite.setAll({
             fill: am5.color(0x2A3654),      // --ink 진한 남색 글자
             strokeOpacity: 0,                // 글자 외곽선 끔 (배경이 글자를 받쳐주므로 필요 없음)
@@ -295,6 +297,12 @@ function initRegionMap(containerId, options) {
               strokeWidth: 1.5,
               cornerRadiusTL: 999, cornerRadiusTR: 999,
               cornerRadiusBL: 999, cornerRadiusBR: 999,
+              // 미세 그림자: 선택된 캡슐이 "살짝 떠있다"는 느낌만 전달
+              shadowColor: am5.color(0x000000),
+              shadowBlur: 4,
+              shadowOffsetX: 0,
+              shadowOffsetY: 1,
+              shadowOpacity: 0.18,
             }),
           });
         } else {
@@ -414,7 +422,6 @@ function initRegionMap(containerId, options) {
     setTimeout(() => root.resize(), 100);
 
     polygonSeries.mapPolygons.template.setAll({
-      tooltipText: "{name}: {value.formatNumber('+#,##0.0|#,##0.0')}%",
       interactive: true,
       strokeWidth: 1,
       stroke: am5.color(0xffffff),
@@ -427,30 +434,25 @@ function initRegionMap(containerId, options) {
       return ctx ? divergingColor(ctx.value) : fill;
     });
 
-    // 마우스 올렸을 때 스타일
+    // [2026-10-08] hover 효과를 "색 변경" → "살짝 떠오름(scale)"으로 교체.
+    // 지역 fill 은 데이터 기반 색이므로 바꾸지 않음. tooltipText 도 제거.
+    // [2026-10-08] hover 효과: 색/명도 변경 없이 scale 1.01 + 아주 약한 drop-shadow 로만 표현.
     polygonSeries.mapPolygons.template.states.create('hover', {
-      fill: am5.color(0xF5C96B),
+      scale: 1.01,
+      shadowColor: am5.color(0x000000),
+      shadowBlur: 3,
+      shadowOffsetX: 0,
+      shadowOffsetY: 1,
+      shadowOpacity: 0.12,
     });
 
-    // 비교 왼쪽/오른쪽으로 선택된 지역의 테두리 색상 상수.
-    // fill(색칠)은 데이터 기반 diverging 색을 그대로 유지 (fill adapter가 계속 처리).
-    // 테두리만 순위표 왼쪽/오른쪽 셀의 배지 색과 똑같이 맞춰서 굵게 그림.
-    //   왼쪽 = 파랑(#4E7FB8, 차가운 색) = 순위표 왼쪽 셀 색상과 매칭
-    //   오른쪽 = 살구(#D4834F, 따뜻한 색) = 순위표 오른쪽 셀 색상과 매칭
-    // 이 값들을 실제로 폴리곤에 어떻게 적용하는지는 아래 setCompareSelection 참고.
-    const COMPARE_LEFT_STROKE = am5.color(0x4E7FB8);
-    const COMPARE_RIGHT_STROKE = am5.color(0xD4834F);
+    // 모든 지역 공통 베이스 테두리 (지역간 경계선 역할).
+    // [2026-10-08] 선택 시의 비교색 테두리(파랑/살구) 로직은 제거함 - geodata 가
+    //   MultiPolygon(전남은 섬까지 35개 도형)이라 "모든 섬에 각각" 그려지는 문제가 있었고,
+    //   선택 표시는 라벨 캡슐(흰 배경 + 그림자)이 전담하게 되어 테두리는 더 이상 선택
+    //   상태를 표현할 필요가 없어졌다. 세종시 원 bullets 생성에서 DEFAULT_STROKE_WIDTH 를
+    //   사용하므로 상수는 유지.
     const DEFAULT_STROKE = am5.color(0xffffff);
-    // [2026-10-07] 5 -> 2.5.
-    // geodata 는 시도 하나가 MultiPolygon 이고(전남은 섬까지 35개 도형), 여기서 정한
-    // 굵기가 그 "모든 섬에 각각" 그려진다. 5px 일 때는 작은 섬이 테두리만으로 꽉 차서
-    // 남해안이 색 덩어리처럼 뭉개졌다. 또 굵기가 고정이라 도형 크기 대비로 보면
-    // 서울 같은 작은 시도는 테두리가 도형을 거의 덮고 경북 같은 큰 시도는 가늘어 보였다.
-    //
-    // 면(fill)을 진하게 해서 선택을 표시하는 방법도 시도했는데, amCharts 의 fill adapter 가
-    // 외부 변수 변화만으로는 다시 평가되지 않아(markDirty 로도 안 됨) 보류했다.
-    // [2026-10-08] 2.5 -> 1. 선택 표시는 이제 라벨 캡슐이 맡는다.
-    const COMPARE_STROKE_WIDTH = 1;
     const DEFAULT_STROKE_WIDTH = 1;
 
     // ---- 클릭 이벤트 (제자리에서 누르고 뗀 경우: 단순 클릭) ----
@@ -534,10 +536,11 @@ function initRegionMap(containerId, options) {
         stroke: DEFAULT_STROKE,
         interactive: true,
         cursorOverStyle: 'pointer',
-        tooltipText: "세종특별자치시: {value.formatNumber('+#,##0.0|#,##0.0')}%",
         // 평소엔 안 보이게 투명하게 둠 - 지도 위에 이질적인 동그라미가 튀어 보인다는
         // 피드백 반영. 눈에는 안 보여도 도형(원) 자체는 그대로 있어서 그 위치를
         // 클릭하는 건 여전히 됨 - "안 보이는 클릭 영역"이 된 것뿐.
+        // [2026-10-08] tooltipText 제거(지도 전체 툴팁 제거 방침과 통일).
+        // 세종시 식별은 상단 캡슐 라벨로 처리됨.
         fillOpacity: 0,
         strokeOpacity: 0,
       });
@@ -547,8 +550,6 @@ function initRegionMap(containerId, options) {
         const ctx = target.dataItem && target.dataItem.dataContext;
         return ctx ? divergingColor(ctx.value) : fill;
       });
-      // 마우스를 올렸을 때만 살짝 보이게 해서 "여기 세종시 있다"는 힌트만 줌
-      circle.states.create('hover', { fillOpacity: 0.6, fill: am5.color(0xF5C96B) });
 
       // 폴리곤 클릭과 똑같은 콜백을 그대로 호출 (지역명만 하드코딩해서 넘김)
       circle.events.on('click', () => {
@@ -574,54 +575,13 @@ function initRegionMap(containerId, options) {
     controls.root = root;
     controls.applyData = applyData;
 
-    // 비교 왼쪽/오른쪽 지역을 지도에서 강조 표시.
-    // 각 polygon의 base value(setAll)와 'default' state를 둘 다 우리 값으로 덮어씀 ->
-    // hover 이탈 시 amCharts가 자동 복원하는 default가 이미 우리 테두리를 담고 있어서
-    // 테두리가 사라지지 않음. (예전엔 template state 방식으로 했다가 hover 이탈마다
-    // 테두리가 벗겨지는 문제가 있어서 이 방식으로 바꿈)
+    // [2026-10-08] 비교 선택 표시는 라벨 캡슐(흰 배경 + 미세 drop-shadow)만 담당.
+    // 지도 폴리곤 fill 과 stroke 는 데이터 기반/베이스 상태 그대로 유지해서 색상 구분이
+    // 흐려지지 않게 한다. 세종시 원도 평소 투명 상태 그대로 두고, 선택 식별은 캡슐로만.
     controls.setCompareSelection = function (leftName, rightName) {
       // 라벨 캡슐에도 반영하려고 전역 변수를 갱신 (아래 fillRegionLabels 호출이 읽음)
       selectedLeftName = leftName || null;
       selectedRightName = rightName || null;
-
-      polygonSeries.mapPolygons.each((polygon) => {
-        const code = polygon.dataItem.get('id');
-        const name = SIDO_CODE_TO_NAME[code];
-
-        let strokeColor, strokeWidth;
-        if (name === leftName) {
-          strokeColor = COMPARE_LEFT_STROKE;
-          strokeWidth = COMPARE_STROKE_WIDTH;
-        } else if (name === rightName) {
-          strokeColor = COMPARE_RIGHT_STROKE;
-          strokeWidth = COMPARE_STROKE_WIDTH;
-        } else {
-          strokeColor = DEFAULT_STROKE;
-          strokeWidth = DEFAULT_STROKE_WIDTH;
-        }
-
-        // (1) 현재 값 즉시 갱신 (지금 화면에 반영)
-        polygon.setAll({ stroke: strokeColor, strokeWidth: strokeWidth });
-
-        // (2) 이 polygon의 'default' state를 새로 만들어서 hover 이탈 시에도 이 값으로 돌아가게 함
-        polygon.states.create('default', {
-          stroke: strokeColor,
-          strokeWidth: strokeWidth,
-        });
-      });
-
-      // 세종시는 폴리곤이 아니라 별도 마커(sejongCircle)라서 위 루프에 안 걸림 - 똑같은 규칙을 따로 적용.
-      // 평소엔 투명(strokeOpacity:0)해서 안 보이다가, 실제로 비교 지역으로 선택됐을 때만
-      // 테두리를 보이게(strokeOpacity:1) 해서 "선택됨" 표시가 나게 함.
-      if (sejongCircle) {
-        if (leftName === SEJONG_NAME) {
-          sejongCircle.setAll({ stroke: COMPARE_LEFT_STROKE, strokeWidth: COMPARE_STROKE_WIDTH, strokeOpacity: 1 });
-        } else if (rightName === SEJONG_NAME) {
-          sejongCircle.setAll({ stroke: COMPARE_RIGHT_STROKE, strokeWidth: COMPARE_STROKE_WIDTH, strokeOpacity: 1 });
-        } else {
-          sejongCircle.setAll({ stroke: DEFAULT_STROKE, strokeWidth: DEFAULT_STROKE_WIDTH, strokeOpacity: 0 });
-        }
-      }
 
       // 라벨 캡슐만 다시 입힌다.
       // selected 필드는 dataItem 에 그대로 남아 있어서 fillRegionLabels (data.setAll) 를
