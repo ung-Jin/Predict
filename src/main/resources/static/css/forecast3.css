@@ -64,19 +64,16 @@
   margin-top: 8px;
 }
 
-/* 한 달 칸. 지역이 2개면 두 줄이 쌓인다.
-
-   justify-self 와 align-items 가 하는 일이 다르다.
-     justify-self : center -> 두 줄 묶음 전체를 칸 가운데에 둔다 (지금 위치 그대로)
-     align-items  : flex-start -> 묶음 안에서 두 줄을 왼쪽(앞쪽)에 맞춘다
-   전에 쓰던 align-items:center 는 두 줄을 각각 따로 가운데에 놓기 때문에,
-   "경북 +12.3%" 처럼 글자 길이가 다르면 점의 좌우 위치가 줄마다 어긋났다. */
+/* 한 달 칸. 지역이 2개면 한 줄에 가로로 나란히 (A지역 B지역 순서).
+   [2026-10-08] 세로(column) -> 가로(row) 로 변경. 위 bar 가 월 묶음 안에서 A/B 가 좌/우로
+   나란히 서는 모양과 맞춤. 가로로 바뀌면서 캡션 세로가 절반이 되고, 그만큼 .forecast3-chart
+   의 flex:1 이 흡수해 bar 가 커진다. */
 .f3-caption-cell {
   justify-self: center;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
 }
 
 /* "서울 -6.6%" 한 덩어리 */

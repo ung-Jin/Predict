@@ -16,10 +16,21 @@
 //차트 객체를 저장할 변수. 다시 그릴 때 이전 차트를 지우는 데 쓴다
 let savedForecast3Chart = null;
 
+/* [2026-10-08] 전년도 막대 전용 light color. kpiSeriesLightColor(공용) 는 alpha 0.18 인데
+   trend 음영이 겹치는 상황을 전제한 값이라 forecast3 막대에는 너무 희미했다. 여기선 bar 가
+   서로 겹치지 않고 나란히 서므로 alpha 0.4 정도까지 올려도 안전하고 가시성이 올라감. */
+function forecast3LightColor(index, name){
+  const base = kpiSeriesColor(index, name);
+  const r = parseInt(base.slice(1,3), 16);
+  const g = parseInt(base.slice(3,5), 16);
+  const b = parseInt(base.slice(5,7), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',0.4)';
+}
+
 //한 줄(지역)을 "작년 / 예측" 막대 두 개로 만드는 함수
 function makeForecast3Bars(one, index){
   const color = kpiSeriesColor(index, one.name);
-  const lightColor = kpiSeriesLightColor(index, one.name);
+  const lightColor = forecast3LightColor(index, one.name);
 
   //작년 막대 : 얇고 옅게. 비교 기준이라 눈에 덜 띄게 한다
   const lastYearBar = {
