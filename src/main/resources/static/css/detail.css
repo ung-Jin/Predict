@@ -26,19 +26,24 @@
    먼저 공간을 가져가 왼쪽이 0까지 쪼그라드는 현상이 생긴다. grid 의 fr 단위는
    콘텐츠 크기와 무관하게 비율대로 공간을 나눠주므로 캔버스가 뭘 하든 비율이 지켜진다.
    1.35fr : 1fr ≈ 좌 58% / 우 42% */
-/* 스크롤 유무가 바뀌어도 페이지의 가로 폭을 유지한다. */
-.detail-page { scrollbar-gutter: stable; }
-
 .detail-body {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-columns: 1.35fr 1fr;
     gap: 16px;
+    /* [2026-10-08 재조정] 좌(17행 자연 신장) ↔ 우(차트 3장) 세로 끝이 어긋나던 문제.
+       align-items:stretch 로 두 열의 세로 높이를 같게 묶는다. 좌측 표가 "주"가 되어
+       자연 신장한 높이를 우측이 수용(.detail-charts height:100%, 카드 flex:1 1 0 분배).
+       예전엔 start 로 두는 대신 히트맵의 aspect-ratio 가 선택 수에 따라 전체 세로를
+       흔들었는데, 그 aspect-ratio 를 detail-charts.css 에서 제거하면서 stretch 복귀 가능. */
     align-items: stretch;
     min-width: 0;
 }
 
-.detail-table, .detail-charts { min-width: 0; }
-.detail-table { box-sizing: border-box; }
+/* 좌측 표가 차지하는 최소 너비 보장.
+   grid 자식에 min-width: 0 을 안 쓰면 안의 긴 테이블이 트랙을 밀어낼 수 있어
+   min-width 는 0 으로 두되, 바깥 grid 비율로 공간을 확정한다. */
+.detail-table  { min-width: 0; }
+.detail-charts { min-width: 0; }
 
 /* ============================================================================
    필터 바 (상단)
@@ -429,4 +434,7 @@
    ========================================================================== */
 @media (max-width: 1100px) {
     .detail-body { grid-template-columns: 1fr; }
+    /* 세로 스택에서는 .detail-charts height:100% 가 "좌측 표 높이" 가 아닌
+       "부모의 자연 신장" 을 따르므로 auto 로 되돌려 각 카드가 자기 콘텐츠로 신장. */
+    .detail-charts { height: auto; }
 }
