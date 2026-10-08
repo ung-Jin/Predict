@@ -48,11 +48,16 @@ function renderNationalStrip(containerId, monthData, onSelect) {
     return;
   }
 
-  // 축 범위. 0을 반드시 포함시켜서 "0% 기준선"이 항상 축 안에 들어오게 함
-  // (지도 색 스케일도 map.js에서 같은 방식으로 계산 - 그래야 점 색과 지도 색이 일치)
-  const scaleMin = Math.min(0, rows[0].yoyRate);
-  const scaleMax = Math.max(0, rows[rows.length - 1].yoyRate);
-  const span = scaleMax - scaleMin || 1; // 전부 0%인 경우 0으로 나누기 방지
+  // [2026-10-08] 대칭 축으로 바꿈. 예전엔 데이터 범위에 맞춰 scaleMin/scaleMax 를 잡아서,
+  // 한쪽으로 치우친 달(예: 16개 음수 1개 양수)은 0%가 축의 96% 지점에 붙어 보였다.
+  // 이제는 "가장 큰 절대값"을 양쪽으로 똑같이 두어 0% 가 항상 축 가운데에 온다.
+  // 지도 색 스케일(map.js divergingHex)은 비대칭을 유지한다 - 거긴 "증감 방향"이 핵심.
+  const absLow = Math.abs(rows[0].yoyRate);                    // 가장 큰 감소폭
+  const absHigh = Math.abs(rows[rows.length - 1].yoyRate);     // 가장 큰 증가폭
+  const maxAbs = Math.max(absLow, absHigh) || 1;               // 전부 0%인 경우 1 로
+  const scaleMin = -maxAbs;
+  const scaleMax = maxAbs;
+  const span = scaleMax - scaleMin;
 
   const toPercent = (value) => ((value - scaleMin) / span) * 100;
 
