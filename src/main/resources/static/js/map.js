@@ -247,8 +247,28 @@ function initRegionMap(containerId, options) {
     //
     // 캡슐(선택 지역 강조)은 아래 fillRegionLabels 가 data 를 넣고 "렌더 완료 후" 에
     // labelSeries.bullets 를 돌면서 sprite.set('background', ...) 로 입히는 방식으로 처리.
-    labelSeries.bullets.push((root, series, dataItem) =>
-      am5.Bullet.new(root, {
+    // [2026-10-08] 캡슐 배경(RoundedRectangle)을 라벨 생성 시 "딱 한 번" 만들어 붙여둔다.
+    //   예전엔 applyCapsuleStyles 가 매번 새 RoundedRectangle 을 new 해서 setAll 로 교체했는데,
+    //   A/B 둘 다 선택한 뒤 B 하나만 해제하면 A 캡슐까지 사라지는 버그가 있었음. 교체 과정에
+    //   서 amCharts 가 라벨들의 background 참조를 깔끔히 다루지 못하면서 다른 라벨 상태까지
+    //   함께 깨지는 걸로 보임. 배경을 처음부터 숨긴 상태로 붙여두고 opacity 토글만 하면
+    //   참조 교체가 없어 버그가 사라진다.
+    labelSeries.bullets.push((root, series, dataItem) => {
+      const bg = am5.RoundedRectangle.new(root, {
+        fill: am5.color(0xffffff),
+        fillOpacity: 0,                 // 초기 숨김 - applyCapsuleStyles 가 선택 시 올림
+        stroke: am5.color(0xD8DEE8),
+        strokeWidth: 1.5,
+        strokeOpacity: 0,                // 초기 숨김
+        cornerRadiusTL: 999, cornerRadiusTR: 999,
+        cornerRadiusBL: 999, cornerRadiusBR: 999,
+        shadowColor: am5.color(0x000000),
+        shadowBlur: 4,
+        shadowOffsetX: 0,
+        shadowOffsetY: 1,
+        shadowOpacity: 0,                // 초기 숨김
+      });
+      return am5.Bullet.new(root, {
         sprite: am5.Label.new(root, {
           text: '{name}',
           populateText: true,
@@ -264,55 +284,34 @@ function initRegionMap(containerId, options) {
           strokeOpacity: 0.85,
           // 글자가 클릭을 가로채면 그 지역을 못 고르게 되므로 통과시킨다
           interactive: false,
+          background: bg,              // 숨김 상태로 미리 붙여둠. 참조는 평생 고정.
         }),
-      })
-    );
+      });
+    });
 
-    // 선택된 라벨에 캡슐(색 배경 + 흰 글자) 입히기 / 벗기기.
-    // bullets 콜백은 "데이터가 들어온 뒤" 에만 생성되므로, 반드시 data.setAll() 호출
-    // 다음 프레임에 실행해야 한다 (아래 fillRegionLabels 가 setTimeout 으로 호출).
+    // 선택 상태 토글: sprite 의 글자 외곽선/padding 과 background 의 opacity 만 변경.
+    // background 교체(new)는 하지 않음 - 참조 유지가 핵심.
     function applyCapsuleStyles() {
       labelSeries.dataItems.forEach((di) => {
         const bullets = di.bullets;
         if (!bullets || bullets.length === 0) return;
         const sprite = bullets[0].get('sprite');
         if (!sprite) return;
+        const bg = sprite.get('background');
         const sel = di.dataContext && di.dataContext.selected;
         const isSelected = sel === 'left' || sel === 'right';
         if (isSelected) {
-          // [2026-10-08 재설계] A/B 색 배경은 지도 색과 섞여 헷갈려서,
-          // "흰 배경 + A/B 색 테두리 + 진한 남색 글자" 캡슐로 변경.
-          // [2026-10-08 추가] 선택 테두리(섬 포함) 제거 후, 캡슐에 미세 drop-shadow 로
-          //   "떠오름" 느낌만 더해서 선택 상태를 식별 가능하게 함.
           sprite.setAll({
-            fill: am5.color(0x2A3654),      // --ink 진한 남색 글자
-            strokeOpacity: 0,                // 글자 외곽선 끔 (배경이 글자를 받쳐주므로 필요 없음)
+            strokeOpacity: 0,            // 글자 외곽선 끔 (배경이 글자를 받쳐주므로)
             paddingTop: 2, paddingBottom: 2, paddingLeft: 8, paddingRight: 8,
-            background: am5.RoundedRectangle.new(sprite.root, {
-              fill: am5.color(0xffffff),
-              fillOpacity: 0.9,              // 85~90% - 뒤 지도 색이 살짝 비치게
-              // [2026-10-08] A/B 색을 쓰면 지도 fill 과 겹쳐 헷갈림. 연한 회색 하나로 통일.
-              // A/B 구분은 드롭다운·칩·비교표에서만. 캡슐은 "선택됐다"는 사실만 보여준다.
-              stroke: am5.color(0xD8DEE8),
-              strokeWidth: 1.5,
-              cornerRadiusTL: 999, cornerRadiusTR: 999,
-              cornerRadiusBL: 999, cornerRadiusBR: 999,
-              // 미세 그림자: 선택된 캡슐이 "살짝 떠있다"는 느낌만 전달
-              shadowColor: am5.color(0x000000),
-              shadowBlur: 4,
-              shadowOffsetX: 0,
-              shadowOffsetY: 1,
-              shadowOpacity: 0.18,
-            }),
           });
+          if (bg) bg.setAll({ fillOpacity: 0.9, strokeOpacity: 1, shadowOpacity: 0.18 });
         } else {
-          // 선택 해제 시 기본 스타일 복원
           sprite.setAll({
-            fill: am5.color(0x2A3654),
             strokeOpacity: 0.85,
             paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0,
-            background: undefined,
           });
+          if (bg) bg.setAll({ fillOpacity: 0, strokeOpacity: 0, shadowOpacity: 0 });
         }
       });
     }
