@@ -4,10 +4,12 @@
 .kpi {
   display: flex;
   gap: 16px;
-  /* [2026-10-07] 좌측 컬럼 바닥을 우측 지도와 맞추기 위한 몫 (common.css 계산 참고).
-     .kpi 는 카드가 아니라 카드 4장을 담는 틀이고, 안의 .kpi-card 는 stretch 로 이 높이를 채운다.
-     194 -> 170px 로 줄이고, 줄인 24px 는 월별 사용량 추이(trend.css)가 가져간다. */
-  height: 170px;
+  /* [2026-10-08] 170 -> 150px (-20). 사용자 요구: 상단 카드 조금 줄이고 그만큼 월별 추이로.
+     trend.css 의 .trend 가 height 고정을 벗고 flex:1 로 남는 세로 공간을 흡수하므로,
+     여기서 줄인 20px 는 자동으로 추이 차트로 이전된다.
+     flex-shrink:0 - 뷰포트가 좁아 .trend min-height 가 걸리는 상황에서 kpi 가 쪼그라들지 않게. */
+  height: 150px;
+  flex-shrink: 0;
 }
 
 .kpi-card {

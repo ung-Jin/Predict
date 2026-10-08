@@ -155,6 +155,20 @@ function initRegionMap(containerId, options) {
     const root = am5.Root.new(containerId);
     root.setThemes([am5themes_Animated.new(root)]);
 
+    // [2026-10-08] 지도 더블클릭 확대 비활성화 (사용자 요청).
+    // amCharts5 MapChart 는 더블클릭하면 그 지점으로 자동 줌인하는 built-in 동작이 있는데,
+    // 지역 선택 중 실수로 더블클릭하면 지도가 과하게 확대되어 다시 홈 버튼을 눌러야 하는
+    // 번거로움이 있음. 컨테이너 레벨에서 dblclick 을 capture phase 로 가로채 preventDefault
+    // 하면 amCharts 로 전달되지 않아 줌 동작 자체가 일어나지 않음. 단일 클릭(지역 선택)은
+    // 영향 없음.
+    const mapEl = document.getElementById(containerId);
+    if (mapEl) {
+      mapEl.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, true);
+    }
+
     // [2026-10-07] 버그 수정: amCharts5는 기본적으로 #mapdiv의 ResizeObserver를 달아두고
     // (root.autoResize = true, 기본값) 컨테이너 크기가 "조금이라도" 바뀔 때마다 줌/투영을
     // 다시 계산함. 그런데 같은 지자체를 반복 클릭하면 그때마다 순위표↔분포스트립 교체,

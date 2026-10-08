@@ -64,19 +64,24 @@
   margin-top: 8px;
 }
 
-/* 한 달 칸. 지역이 2개면 두 줄이 쌓인다.
-
-   justify-self 와 align-items 가 하는 일이 다르다.
-     justify-self : center -> 두 줄 묶음 전체를 칸 가운데에 둔다 (지금 위치 그대로)
-     align-items  : flex-start -> 묶음 안에서 두 줄을 왼쪽(앞쪽)에 맞춘다
-   전에 쓰던 align-items:center 는 두 줄을 각각 따로 가운데에 놓기 때문에,
-   "경북 +12.3%" 처럼 글자 길이가 다르면 점의 좌우 위치가 줄마다 어긋났다. */
+/* 한 달 칸. [2026-10-08 재조정] bar 자리 수(2N: 작년/예측 × 지역) 만큼의 grid 로 두고,
+   JS 가 짝수 자리(예측 bar 아래)에만 지역 글자를 넣고 홀수 자리(작년 bar 아래)는 비운다 →
+   지역명이 각 "예측" bar 바로 아래에 세로 정렬된다. grid-template-columns 은 JS 가 셀마다
+   inline 으로 지정. */
 .f3-caption-cell {
-  justify-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  justify-self: stretch;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+}
+.f3-caption-spacer {
+  display: block;
+}
+/* grid 1fr 셀이 자식의 min-content 때문에 밀려 비균등해지는 걸 방지 →
+   네 칸이 똑같이 분할되어 bar 와 캡션이 정확히 세로 정렬된다. */
+.f3-caption-cell > * {
+  min-width: 0;
 }
 
 /* "서울 -6.6%" 한 덩어리 */

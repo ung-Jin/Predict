@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "predict-dashboard",
-      "runtimeExecutable": "D:\\01-STUDY\\dev-01\\workspace_spring\\Predict\\gradlew.bat",
-      "runtimeArgs": ["bootRun"],
-      "port": 8080
+      "runtimeExecutable": "D:\\01-STUDY\\dev\\workspace_spring\\Predict\\gradlew.bat",
+      "runtimeArgs": ["bootRun", "--args=--server.port=8089"],
+      "port": 8089
     }
   ]
 }

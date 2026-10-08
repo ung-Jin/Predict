@@ -16,10 +16,21 @@
 //차트 객체를 저장할 변수. 다시 그릴 때 이전 차트를 지우는 데 쓴다
 let savedForecast3Chart = null;
 
+/* [2026-10-08] 전년도 막대 전용 light color. kpiSeriesLightColor(공용) 는 alpha 0.18 인데
+   trend 음영이 겹치는 상황을 전제한 값이라 forecast3 막대에는 너무 희미했다. 여기선 bar 가
+   서로 겹치지 않고 나란히 서므로 alpha 0.4 정도까지 올려도 안전하고 가시성이 올라감. */
+function forecast3LightColor(index, name){
+  const base = kpiSeriesColor(index, name);
+  const r = parseInt(base.slice(1,3), 16);
+  const g = parseInt(base.slice(3,5), 16);
+  const b = parseInt(base.slice(5,7), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',0.4)';
+}
+
 //한 줄(지역)을 "작년 / 예측" 막대 두 개로 만드는 함수
 function makeForecast3Bars(one, index){
   const color = kpiSeriesColor(index, one.name);
-  const lightColor = kpiSeriesLightColor(index, one.name);
+  const lightColor = forecast3LightColor(index, one.name);
 
   //작년 막대 : 얇고 옅게. 비교 기준이라 눈에 덜 띄게 한다
   const lastYearBar = {
@@ -45,6 +56,10 @@ function makeForecast3Bars(one, index){
 }
 
 //막대 아래 증감률 글자 채우기 (막대 위에 숫자를 다 올리면 읽기 힘들어서 아래에 적는다)
+//[2026-10-08] 각 "예측" bar 바로 아래에 그 지역 캡션이 오도록 재배치.
+//  bar 는 월 묶음 안에 (작년|예측) × N 지역 순으로 들어간다. 캡션 cell 을 2N 열 grid 로
+//  두고 짝수 자리(2,4,...)에만 지역 글자를 넣고 홀수 자리(작년 bar 아래) 는 비운다 →
+//  지역명이 예측 bar 아래 세로 정렬.
 function drawForecast3Caption(chartData){
   const caption = document.querySelector('#forecast3Caption');
   const labels = chartData.labels;
@@ -53,17 +68,21 @@ function drawForecast3Caption(chartData){
   //달 수만큼 칸을 만든다 (8월 / 9월 / 10월 이면 3칸)
   caption.style.gridTemplateColumns = 'repeat(' + labels.length + ', 1fr)';
 
+  const colsPerCell = series.length * 2;  // 작년/예측 × 지역 수
   let html = '';
 
-  //달 하나마다 한 칸, 그 안에 지역 수만큼 줄을 쌓는다
+  //달 하나마다 한 칸, 그 안에 bar 자리수(2N) grid 로 지역 글자를 "예측" 자리에만 배치
   for(let month = 0; month < labels.length; month++){
-    html += '<div class="f3-caption-cell">';
+    html += '<div class="f3-caption-cell" style="grid-template-columns: repeat(' + colsPerCell + ', minmax(0, 1fr))">';
 
     for(let i = 0; i < series.length; i++){
       const one = series[i];
       const color = kpiSeriesColor(i, one.name);
       const valueText = kpiSigned(one.yoyPct[month], 1) + '%';
 
+      // 작년 bar 아래 자리는 비움 (글자 없이 grid 칸만 차지)
+      html += '<span class="f3-caption-spacer"></span>';
+      // 예측 bar 아래 자리에 지역명 + 증감률
       html += '<span class="f3-caption-item">';
       html += '  <span class="f3-dot" style="background:' + color + '"></span>';
       html += '  <span>' + one.name + ' ' + valueText + '</span>';

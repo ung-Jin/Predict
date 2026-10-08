@@ -103,6 +103,12 @@
 .map {
   flex: 0 0 480px;
   box-sizing: border-box;
+  /* [2026-10-08] 뷰포트 100vh 안에 담기 위해, 지도 카드가 .content 가 배정한 세로
+     (좌측 chips+kpi+row+trend 합계와 동일) 를 넘지 않도록 min-height:0 과 넘침 숨김.
+     지도 내부(#mapdiv 560 + 비교표 등) 합이 가용 세로를 넘으면 아래쪽이 잘리므로,
+     필요하면 #mapdiv 높이도 조정. */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .map-title {
