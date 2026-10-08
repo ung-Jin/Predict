@@ -30,7 +30,12 @@
     display: grid;
     grid-template-columns: 1.35fr 1fr;
     gap: 16px;
-    align-items: stretch;
+    /* [2026-10-08] grid 자식 둘(.detail_table, .detail-charts) 이 자동으로 같은 높이로
+       stretch 되는데, 오른쪽 차트 contents 가 선택 수(히트맵 블록 개수 등)에 따라 세로가
+       변해 전체 grid 높이가 밀렸다 (767 -> 751px). align-items:start 로 두면 두 열이
+       각자 자기 contents 높이만 쓰고 서로 영향 안 준다 - 왼쪽 표는 선택과 무관하게
+       항상 같은 높이. */
+    align-items: start;
     min-width: 0;
 }
 
@@ -254,6 +259,10 @@
 .dt-tbl {
     width: 100%;
     border-collapse: collapse;
+    /* [2026-10-08] 선택이 바뀔 때마다 셀 내용(체크박스/뱃지)이 바뀌면서
+       브라우저가 열 폭을 내용 기반으로 재계산해 표가 미세하게 움직였다.
+       fixed 로 두면 아래 .dt-col-* 의 % 폭을 그대로 지킨다. */
+    table-layout: fixed;
     /* [2026-10-07] 가시성을 위해 12 -> 14px */
     font-size: 14px;
     font-variant-numeric: tabular-nums;   /* 숫자 자릿수 고정 (표가 흔들리지 않음) */
@@ -267,7 +276,17 @@
     border-bottom: 1px solid var(--line);
     white-space: nowrap;
 }
-.dt-tbl thead th.dt-col-sido { text-align: left; padding-left: 4px; }
+.dt-tbl thead th.dt-col-sido {
+    text-align: left; padding-left: 4px;
+}
+
+.dt-col-mape {
+    transform: translateX(-20px);
+}
+.dt-col-fc{
+    transform: translateX(-50px);
+}
+
 .dt-sub {
     display: block;
     font-weight: 400;
@@ -298,7 +317,18 @@
 .dt-tbl tbody tr.dt-row-b { background: var(--detail-b-soft); }
 
 /* 체크박스 + 뱃지 + 이름 */
-.dt-sido-inner { display: inline-flex; align-items: center; gap: 8px; }
+/* [2026-10-08] 뱃지는 absolute 로 체크박스 위에 겹쳐 그린다.
+   detail.js 가 선택 행에만 뱃지 요소를 추가하면 "체크박스 + 뱃지 + 지역명" 이 되어
+   지역명이 23px 밀렸음. absolute 로 흐름(flow) 에서 빼면 지역명 위치가 선택 전후 동일.
+   뱃지(15px) 가 체크박스(13px) 보다 크므로 체크박스를 완전히 덮어서 "선택 시 체크박스가
+   A/B 뱃지로 바뀐 것처럼" 보임. */
+.dt-sido-inner { display: inline-flex; align-items: center; gap: 8px; position: relative; }
+.dt-sido-inner .dt-badge {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
 .dt-check {
     width: 13px; height: 13px;
     border: 1.5px solid #CBD5E1;
@@ -358,6 +388,8 @@
 .dt-yoy-flat .dt-yoy-dot { background: #CBD5E1; }
 
 /* MAPE 셀의 가로 바 */
+/* [2026-10-08] 다시 우측정렬. 다른 숫자 열(RMSE/MAE)과 세로선을 맞춘다.
+   헤더 "MAPE" 와 숫자가 셀 오른쪽 끝에서 같은 거리(6px)에 오게 아래 span 에 padding-right. */
 .dt-mape-cell { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
 .dt-mape-bar {
     width: 60px; height: 4px;
@@ -374,6 +406,9 @@
 .dt-mape-cell > span {
     min-width: 48px;
     text-align: right;
+    /* [2026-10-08] 다른 숫자 열(RMSE/MAE) 보다 살짝 왼쪽으로 당긴다 (바-숫자 묶음이
+       셀의 오른쪽 끝까지 꽉 차 보여서 쏠린 느낌이 났음). 10px 로 안쪽으로 들여옴. */
+    padding-right: 10px;
 }
 .dt-mape-bar > i {
     position: absolute; left: 0; top: 0; bottom: 0;

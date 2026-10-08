@@ -179,12 +179,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 22px;
+  /* [2026-10-08] 세 열의 header 가 같은 높이를 가져야 아래 셀 세로 정렬이 맞는다 */
+  height: 28px;
   font-size: 12.5px;
   font-weight: bold;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* 긴 지역명("경상남도") 이 wrap 되지 않게 - wrap 되면 그 열만 커져서 vs 열과 어긋남 */
   white-space: nowrap;
+  padding: 0 6px;
 }
 
 .compare-col-header.side-left {
@@ -207,8 +210,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 26px;
-  padding: 2px 2px;
+  /* [2026-10-08] 양쪽 열과 vs 열의 셀 높이를 같이 맞춤 */
+  min-height: 44px;
+  padding: 4px 4px;
   border-top: 1px solid var(--line);
   text-align: center;
   line-height: 1.25;

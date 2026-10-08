@@ -238,6 +238,15 @@ function initRegionMap(containerId, options) {
       'KR-41': { dx: 16, dy: 14 },   // 경기
     };
 
+    // [2026-10-08] 선택된 지역은 "캡슐 라벨"로 표시한다. 테두리로만 표시하던 예전 방식은
+    // 섬 많은 지역(전남 35개)의 모든 섬에 테두리가 그려져 지저분했는데, 라벨에 색 배경을
+    // 깔면 지도 fill 과 분리되어 깔끔하다. 안 선택된 라벨은 기존 모습(흰 테두리 + 어두운 글자).
+    // [2026-10-08] 원본과 똑같은 arrow function 형태. 함수형 분기(if 블록) 로 바꾸니
+    // amCharts 가 bullets 콜백을 아예 호출하지 않는 현상이 있어서, 분기는 inline
+    // ternary 로만 처리하고 Label 생성 후 setAll 로 bullets 가 실제로 반영되는 패턴을 유지.
+    //
+    // 캡슐(선택 지역 강조)은 아래 fillRegionLabels 가 data 를 넣고 "렌더 완료 후" 에
+    // labelSeries.bullets 를 돌면서 sprite.set('background', ...) 로 입히는 방식으로 처리.
     labelSeries.bullets.push((root, series, dataItem) =>
       am5.Bullet.new(root, {
         sprite: am5.Label.new(root, {
@@ -259,6 +268,51 @@ function initRegionMap(containerId, options) {
       })
     );
 
+    // 선택된 라벨에 캡슐(색 배경 + 흰 글자) 입히기 / 벗기기.
+    // bullets 콜백은 "데이터가 들어온 뒤" 에만 생성되므로, 반드시 data.setAll() 호출
+    // 다음 프레임에 실행해야 한다 (아래 fillRegionLabels 가 setTimeout 으로 호출).
+    function applyCapsuleStyles() {
+      labelSeries.dataItems.forEach((di) => {
+        const bullets = di.bullets;
+        if (!bullets || bullets.length === 0) return;
+        const sprite = bullets[0].get('sprite');
+        if (!sprite) return;
+        const sel = di.dataContext && di.dataContext.selected;
+        const isSelected = sel === 'left' || sel === 'right';
+        if (isSelected) {
+          // [2026-10-08 재설계] A/B 색 배경은 지도 색과 섞여 헷갈려서,
+          // "흰 배경 + A/B 색 테두리 + 진한 남색 글자" 캡슐로 변경.
+          sprite.setAll({
+            fill: am5.color(0x2A3654),      // --ink 진한 남색 글자
+            strokeOpacity: 0,                // 글자 외곽선 끔 (배경이 글자를 받쳐주므로 필요 없음)
+            paddingTop: 2, paddingBottom: 2, paddingLeft: 8, paddingRight: 8,
+            background: am5.RoundedRectangle.new(sprite.root, {
+              fill: am5.color(0xffffff),
+              fillOpacity: 0.9,              // 85~90% - 뒤 지도 색이 살짝 비치게
+              // [2026-10-08] A/B 색을 쓰면 지도 fill 과 겹쳐 헷갈림. 연한 회색 하나로 통일.
+              // A/B 구분은 드롭다운·칩·비교표에서만. 캡슐은 "선택됐다"는 사실만 보여준다.
+              stroke: am5.color(0xD8DEE8),
+              strokeWidth: 1.5,
+              cornerRadiusTL: 999, cornerRadiusTR: 999,
+              cornerRadiusBL: 999, cornerRadiusBR: 999,
+            }),
+          });
+        } else {
+          // 선택 해제 시 기본 스타일 복원
+          sprite.setAll({
+            fill: am5.color(0x2A3654),
+            strokeOpacity: 0.85,
+            paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0,
+            background: undefined,
+          });
+        }
+      });
+    }
+
+    // [2026-10-08] 라벨 캡슐을 그리는 데 쓰는 "현재 선택" 상태. setCompareSelection 이 갱신.
+    let selectedLeftName = null;
+    let selectedRightName = null;
+
     // 폴리곤이 다 만들어진 뒤에야 visualCentroid() 가 값을 준다 -> datavalidated 에서 채운다.
     function fillRegionLabels() {
       const points = [];
@@ -269,12 +323,16 @@ function initRegionMap(containerId, options) {
         const c = polygon.visualCentroid();
         if (!c) return;
         const offset = LABEL_OFFSET[code] || {};
+        const regionName = SIDO_CODE_TO_NAME[code];
         points.push({
           geometry: { type: 'Point', coordinates: [c.longitude, c.latitude] },
           name: short,
           small: SMALL_LABEL_CODES.includes(code),
           dx: offset.dx || 0,
           dy: offset.dy || 0,
+          selected: regionName === selectedLeftName ? 'left'
+                  : regionName === selectedRightName ? 'right'
+                  : null,
         });
       });
 
@@ -284,9 +342,19 @@ function initRegionMap(containerId, options) {
         geometry: { type: 'Point', coordinates: SEJONG_LONLAT },
         name: SIDO_CODE_TO_SHORT['KR-36'],
         small: true,
+        selected: SEJONG_NAME === selectedLeftName ? 'left'
+                : SEJONG_NAME === selectedRightName ? 'right'
+                : null,
       });
 
+      // 선택된 라벨을 배열 마지막으로 옮긴다. amCharts 는 데이터 순서대로 그리므로
+      // 뒤에 있는 라벨이 위에 그려져 다른 라벨과 겹칠 때도 가려지지 않는다.
+      points.sort((a, b) => (a.selected ? 1 : 0) - (b.selected ? 1 : 0));
+
       labelSeries.data.setAll(points);
+      // bullets 는 setAll 직후가 아니라 "그 다음 프레임" 에 만들어진다 (amCharts 내부 비동기).
+      // 그래서 캡슐 스타일은 한 틱 미뤄서 입힌다.
+      setTimeout(applyCapsuleStyles, 0);
     }
 
     // [2026-10-06] amCharts5는 polygon series에 데이터가 들어오면 "그 지역이 다 보이게"
@@ -381,7 +449,8 @@ function initRegionMap(containerId, options) {
     //
     // 면(fill)을 진하게 해서 선택을 표시하는 방법도 시도했는데, amCharts 의 fill adapter 가
     // 외부 변수 변화만으로는 다시 평가되지 않아(markDirty 로도 안 됨) 보류했다.
-    const COMPARE_STROKE_WIDTH = 2.5;
+    // [2026-10-08] 2.5 -> 1. 선택 표시는 이제 라벨 캡슐이 맡는다.
+    const COMPARE_STROKE_WIDTH = 1;
     const DEFAULT_STROKE_WIDTH = 1;
 
     // ---- 클릭 이벤트 (제자리에서 누르고 뗀 경우: 단순 클릭) ----
@@ -511,6 +580,10 @@ function initRegionMap(containerId, options) {
     // 테두리가 사라지지 않음. (예전엔 template state 방식으로 했다가 hover 이탈마다
     // 테두리가 벗겨지는 문제가 있어서 이 방식으로 바꿈)
     controls.setCompareSelection = function (leftName, rightName) {
+      // 라벨 캡슐에도 반영하려고 전역 변수를 갱신 (아래 fillRegionLabels 호출이 읽음)
+      selectedLeftName = leftName || null;
+      selectedRightName = rightName || null;
+
       polygonSeries.mapPolygons.each((polygon) => {
         const code = polygon.dataItem.get('id');
         const name = SIDO_CODE_TO_NAME[code];
@@ -549,6 +622,26 @@ function initRegionMap(containerId, options) {
           sejongCircle.setAll({ stroke: DEFAULT_STROKE, strokeWidth: DEFAULT_STROKE_WIDTH, strokeOpacity: 0 });
         }
       }
+
+      // 라벨 캡슐만 다시 입힌다.
+      // selected 필드는 dataItem 에 그대로 남아 있어서 fillRegionLabels (data.setAll) 를
+      // 다시 부를 필요가 없다 - 한번 더 setAll 하면 bullets 가 전부 재생성돼 깜빡인다.
+      // 대신 selected 를 아래에서 dataContext 에 직접 꽂고 applyCapsuleStyles 로 반영.
+      labelSeries.dataItems.forEach((di) => {
+        const ctx = di.dataContext;
+        if (!ctx) return;
+        const regionName =
+          ctx.name === SIDO_CODE_TO_SHORT['KR-36'] ? SEJONG_NAME
+          : Object.keys(SIDO_CODE_TO_SHORT).find((c) => SIDO_CODE_TO_SHORT[c] === ctx.name);
+        // 위에서 regionName 은 "KR-XX" 코드가 나올 수 있으니 한글 시도명으로 변환
+        const fullName = regionName && regionName.startsWith('KR-')
+          ? SIDO_CODE_TO_NAME[regionName]
+          : regionName;
+        ctx.selected = fullName === leftName ? 'left'
+                     : fullName === rightName ? 'right'
+                     : null;
+      });
+      applyCapsuleStyles();
     };
 
     // autoResize를 꺼둔 대신, 창 크기가 실제로 바뀔 때만 수동으로 재계산하게 함.
