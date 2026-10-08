@@ -1,29 +1,36 @@
-/* [1번 작성 - 4번 지원] 상세 데이터 우측 차트 전용 CSS. 색/크기는 클로드디자인 시안 기준.
- * 4번의 detail.css를 건드리지 않으려고 따로 만든 파일. */
-
-/* 가로 폭: 표(왼쪽) 5.5 : 차트(오른쪽) 4.5.
- * .detail_table 은 4번의 표 조각. 폭만 여기서 정하고 표 내용은 건드리지 않음. */
-.detail-body > .detail_table{flex:5.5 1 0;min-width:560px}
-/* gap: [2026-10-07] 세로 스크롤을 줄이려고 16 -> 12px */
-.detail-charts{flex:4.5 1 0;min-width:0;display:flex;flex-direction:column;gap:12px}
-
-/* 카드 1장 = 제목 + 차트 영역 */
-.detail-chart-card{display:flex;flex-direction:column;gap:10px}
-.detail-chart-title{font-size:15px;font-weight:700;color:#2A3654}
-.detail-chart-sub{font-size:13px;font-weight:400;color:#66789A;margin-left:8px}
-/* Chart.js는 부모 높이가 정해져 있어야 그려짐.
- * [2026-10-07] 세로 스크롤을 줄이려고 180 -> 164px (카드 3장이라 48px 절감) */
-.detail-chart-body{position:relative;height:164px}
-
-/* 히트맵: 지역마다 블록 하나(이름 + 차트 + 최대/최소 문구), 블록끼리는 가로로 나란히.
- * justify-content:center — [2026-10-07] 전국만 있을 때(블록 1개) 아래 max-width 때문에
- * 좌측으로 쏠려서 우측에 빈 공간이 크게 남던 문제. 폭은 그대로 두고 가운데로 옮긴다
- * (폭을 늘리면 aspect-ratio 때문에 높이도 같이 커져서 위 스크롤 축소와 상충). */
-.detail-chart-heat .detail-chart-body{display:flex;gap:24px;height:auto;justify-content:center}
-.detail-heat-block{flex:1 1 0;min-width:0;max-width:420px}   /* max-width: 히트맵이 하나뿐일 때 너무 커지지 않게 */
-.detail-heat-name{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#2A3654}
-.detail-heat-dot{width:8px;height:8px;border-radius:50%}
-/* 차트 상자는 자기 칸의 폭을 꽉 채우고, 높이는 폭에 비례 (가로 12칸 : 세로 5칸이 정사각형에 가깝게 되는 비율).
- * 네모 크기는 JS가 차트 폭을 보고 계산함 */
-.detail-heat-box{position:relative;width:100%;aspect-ratio:2.1;min-height:0}
-.detail-heat-foot{font-size:12px;color:#66789A}
+/* 상세 표와 차트는 같은 grid 행 높이를 공유한다.
+ * 히트맵 개수나 canvas의 내부 크기가 열 너비·높이를 바꾸지 않도록 한다. */
+.detail-charts {
+    min-width: 0;
+    display: grid;
+    grid-template-rows: repeat(3, minmax(240px, 1fr));
+    gap: 12px;
+}
+.detail-chart-card {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+}
+.detail-chart-title { font-size: 15px; font-weight: 700; color: #2A3654; }
+.detail-chart-sub { font-size: 13px; font-weight: 400; color: #66789A; margin-left: 8px; }
+.detail-chart-body { position: relative; flex: 1; min-height: 164px; min-width: 0; }
+.detail-chart-heat .detail-chart-body {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+}
+.detail-heat-block {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.detail-heat-name { display: flex; align-items: center; gap: 6px; min-height: 20px; font-size: 13px; font-weight: 700; color: #2A3654; }
+.detail-heat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.detail-heat-box { position: relative; width: 100%; flex: 1; min-height: 0; }
+.detail-heat-foot { min-height: 36px; font-size: 12px; line-height: 18px; color: #66789A; overflow-wrap: anywhere; }
