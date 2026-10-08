@@ -25,7 +25,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard Vari
 .row{display:flex;gap:16px}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px}
 .sidebar{width:80px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:12px}
-.sidebar .sidebar-logo{width:40px;height:40px;border-radius:10px;background:#EAF2FC;color:#3F72B5;display:flex;align-items:center;justify-content:center;margin-bottom:22px;cursor:pointer;font-size:inherit}
+.sidebar .sidebar-logo{width:48px;height:48px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:22px;cursor:pointer;overflow:hidden;padding:4px;box-sizing:border-box}
+.sidebar .sidebar-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .sidebar a{width:64px;height:60px;border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--mute);text-decoration:none}
 .sidebar a.on{background:#EAF2FC;color:#2F5F9E;font-weight:700}
 .header{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:12px;color:var(--mute)}

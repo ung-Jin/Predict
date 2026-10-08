@@ -2,7 +2,9 @@
 <aside th:fragment="sidebar(menu)" class="sidebar">
   <a href="/dashboard" class="sidebar-logo"
      onclick="sessionStorage.removeItem('selectedRegionA');sessionStorage.removeItem('selectedRegionB');"
-     aria-label="홈 (전국 지도)">⚡</a>
+     aria-label="홈 (전국 지도)">
+    <img src="/img/logo.png" alt="전력사용량 예측" />
+  </a>
   <a href="/dashboard" th:classappend="${menu == 'dashboard'} ? 'on' : ''">대시보드</a>
   <a href="/detail" th:classappend="${menu == 'detail'} ? 'on' : ''">상세 데이터</a>
 </aside>
