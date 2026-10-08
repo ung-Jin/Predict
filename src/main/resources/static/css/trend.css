@@ -15,9 +15,14 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  /* 좌측 컬럼 바닥을 우측 지도와 맞추기 위한 몫 (common.css 계산 참고).
-     [2026-10-07] 283 -> 307px. 상단 4카드에서 줄인 24px 를 여기로 옮겼다. */
-  height: 307px;
+  /* [2026-10-08] 고정 307px -> flex:1 + min-height:180.
+     common.css 에서 .app 100vh / .content flex:1 로 뷰포트 안에 좌측 열이 묶이고,
+     chips/kpi/row 가 자기 고정 세로를 쓰고 남는 세로 공간을 이 카드가 전부 흡수.
+     상단 kpi 가 20px 줄어든 만큼 이쪽이 자동으로 20px+α 커진다.
+     min-height 180 - 뷰포트가 아주 작은 환경에서도 차트가 알아볼 수 없을 정도로
+     쪼그라들지 않게 하한. */
+  flex: 1 1 0;
+  min-height: 180px;
 }
 
 /* 카드 머리말 : 제목은 왼쪽, 단위는 오른쪽 */

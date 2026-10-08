@@ -204,6 +204,8 @@
     font-size: 13px;
     color: var(--ink);
     user-select: none;
+    /* [2026-10-08] 뱃지를 체크박스 자리에 absolute 로 겹치기 위한 기준점 */
+    position: relative;
 }
 .df-modal-item:hover { background: var(--detail-row-hover); }
 .df-modal-check {
@@ -216,13 +218,23 @@
 }
 .df-modal-check.on-a { background: var(--a); border-color: var(--a); }
 .df-modal-check.on-b { background: var(--b); border-color: var(--b); }
+/* [2026-10-08] 모달 뱃지를 지역명 왼쪽 (체크박스 자리) 에 오게 수정.
+   예전엔 margin-left:auto 로 지역명 오른쪽 끝에 떠서 어색했음. 표(dt-tbl)의 패턴과
+   통일 (.dt-sido-inner .dt-badge 참고): 뱃지를 absolute 로 체크박스 위에 겹쳐 그리면
+   "체크박스가 A/B 뱃지로 바뀐 것처럼" 보이고, 지역명 위치는 선택 전후 흔들리지 않음.
+   뱃지(16px) 가 체크박스(14px) 보다 커서 완전히 덮음.
+   .df-modal-item 의 padding-left 8px + 체크박스 왼쪽 끝 정렬을 맞추기 위해 left:7px
+   (padding 8 - (뱃지-체크박스 폭 차이 2)/2 = 7). */
 .df-badge {
     display: inline-flex; align-items: center; justify-content: center;
     width: 16px; height: 16px;
     border-radius: 4px;
     font-size: 10px; font-weight: 700;
     color: #fff;
-    margin-left: auto;
+    position: absolute;
+    left: 7px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 .df-badge-a { background: var(--a); }
 .df-badge-b { background: var(--b); }
