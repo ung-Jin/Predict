@@ -145,10 +145,6 @@ function formatYearMonth(year, month) {
 // 특정 연/월 기준으로 지도·도넛·순위표를 한꺼번에 그리는 함수
 // ---------------------------------------------------------------------------
 function renderAllForMonth(year, month) {
-  // 도넛 카드 헤더 오른쪽에 기준월 한 번만 표시 (개별 도넛 캡션에서는 뺌)
-  const refEl = document.getElementById('donutRefMonth');
-  if (refEl) refEl.textContent = `· ${formatYearMonth(year, month)} 기준`;
-
   // (1) 지도: 예측 증감률 기준 색칠 + 범례 + 클릭·드래그 이벤트 등록
   //     (실측이 아니라 FORECAST_REGION_DATA(=/chart-api/rank) 기준 - 위 bootstrap() 주석 참고)
   const mapTitleEl = document.getElementById('mapMetricLabel');
@@ -164,13 +160,10 @@ function renderAllForMonth(year, month) {
     onRegionClick: selectRegionForCompare,   // 클릭: 첫 클릭=왼쪽, 두번째 클릭=오른쪽, 그 다음부턴 밀기
   });
 
-  // (2) 도넛: 공통 범례(한 번만) + 도넛 2개
-  //     왼쪽 = compareLeft(없으면 전국 평균), 오른쪽 = compareRight(없으면 숨김)
-  renderContractLegend('donutLegend');
-  renderCompareLeftDonut(compareLeft, year, month);
-  renderCompareRightDonut(compareRight, year, month);
+  // [도넛은 상세 데이터 페이지로 옮김 - detail-donut.js. 이 자리에는 레이더 차트(radar.js)가 들어가며,
+  //  레이더는 이 파일을 거치지 않고 'region:selected' 이벤트로 스스로 다시 그린다]
 
-  // (3) 순위표: 초기 렌더 (둘 다 null이라 "왼쪽"/"오른쪽" 빈 칸으로 뜸)
+  // (2) 순위표: 초기 렌더 (둘 다 null이라 "왼쪽"/"오른쪽" 빈 칸으로 뜸)
   updateCompareUI();
 }
 
@@ -203,25 +196,22 @@ function selectRegionForCompare(sidoName) {
     compareRight = sidoName;
   }
 
+  // updateCompareUI 가 지도·순위표를 갱신하고 'region:selected' 이벤트를 보내므로,
+  // 레이더(radar.js)는 그 이벤트를 듣고 스스로 다시 그린다.
   updateCompareUI();
-  // 왼쪽·오른쪽 도넛 둘 다 새로 그림 (바뀐 쪽만 갱신해도 되지만, 로직 단순화를 위해 둘 다 갱신)
-  renderCompareLeftDonut(compareLeft, CURRENT_YEAR, CURRENT_MONTH);
-  renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
 }
 
 /**
  * 특정 슬롯(left/right)을 지정해서 그 자리에 지역을 직접 꽂음 (밀기 없음, 순서 규칙 안 탐).
- * handleRegionChangeRequest(칩 드롭다운)에서 사용. 놓은 쪽 도넛만 갱신하면 됨.
+ * handleRegionChangeRequest(칩 드롭다운)에서 사용.
  */
 function selectRegionToSlot(sidoName, slot) {
   if (slot === 'left') {
     compareLeft = sidoName;
     updateCompareUI();
-    renderCompareLeftDonut(compareLeft, CURRENT_YEAR, CURRENT_MONTH);
   } else if (slot === 'right') {
     compareRight = sidoName;
     updateCompareUI();
-    renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
   }
 }
 
@@ -244,10 +234,6 @@ function handleRegionChangeRequest(e) {
   if (sido && slot === 'right' && sido === compareLeft) compareLeft = null;
 
   selectRegionToSlot(sido, slot);
-
-  // 위에서 반대쪽이 비워졌을 수도 있으니 두 도넛 다 다시 그림
-  renderCompareLeftDonut(compareLeft, CURRENT_YEAR, CURRENT_MONTH);
-  renderCompareRightDonut(compareRight, CURRENT_YEAR, CURRENT_MONTH);
 }
 
 
@@ -309,89 +295,6 @@ function updateCompareUI() {
   document.dispatchEvent(new CustomEvent('region:selected', {
     detail: { a: compareLeft, b: compareRight },
   }));
-}
-
-/**
- * 전국 평균 도넛 데이터를 계산해서 지정한 캔버스에 그림.
- * 단순 산술평균이 아니라 "총사용량으로 가중평균"함 - 사용량 많은 지역의 계약종별 구성이
- * 전국 평균에 더 크게 반영되게 하기 위함 (인구/사용량 없는 세종 등을 서울과 같은 무게로
- * 취급하면 왜곡됨).
- *
- * [2026-09-30] 예전엔 오른쪽에 항상 고정으로 떠 있는 "3번째 도넛" 전용 함수였는데,
- * 지금은 왼쪽 도넛(#donut-left)이 "지역 미선택 시 기본값"으로 이 함수를 호출하는 구조로 바뀜.
- * 그래서 어느 캔버스에 그릴지(targetCanvasId)를 파라미터로 받도록 함.
- */
-function renderNationalAverageDonut(monthData, targetCanvasId) {
-  if (!monthData.length) {
-    clearDonut(targetCanvasId);
-    return;
-  }
-  const keys = Object.keys(monthData[0].contract);
-  const totalUsageSum = monthData.reduce((sum, r) => sum + r.totalUsage, 0);
-
-  const weightedAvg = {};
-  keys.forEach((k) => {
-    const weightedSum = monthData.reduce((sum, r) => sum + r.contract[k] * r.totalUsage, 0);
-    weightedAvg[k] = Math.round((weightedSum / totalUsageSum) * 100) / 100;
-  });
-
-  // 캡션(=도넛 정중앙 텍스트)은 "전국 평균"만. 색은 지도에 매칭되는 지역이 없으므로 회색.
-  renderContractDonut(targetCanvasId, weightedAvg, '전국 평균', '#3E8E73');
-}
-
-/**
- * 왼쪽 도넛: 전국 내 위치 표의 "왼쪽" 지자체(compareLeft).
- * [2026-09-30] compareLeft가 null(아직 아무 지역도 선택 안 함)이면, 비워두는 대신
- * "전국 평균"을 대신 그려서 첫 화면이 텅 비어 보이지 않게 함.
- */
-function renderCompareLeftDonut(sidoName, year, month) {
-  if (!sidoName) {
-    renderNationalAverageDonut(getRecordsForMonth(year, month), 'donut-left');
-    return;
-  }
-  const rec = getRecord(sidoName, year, month);
-  if (!rec) {
-    clearDonut('donut-left');
-    return;
-  }
-  // 캡션 색상(파랑)은 지도에서 compareLeft 지역 테두리 색·순위표 왼쪽 셀 배지 색과 동일하게 맞춤.
-  renderContractDonut('donut-left', rec.contract, sidoName, '#4E7FB8');
-}
-
-/**
- * 오른쪽 도넛: 전국 내 위치 표의 "오른쪽" 지자체(compareRight).
- * [2026-09-30] compareRight가 null(두 번째 지역을 아직 안 골랐음)이면, 도넛을 지우는 것뿐
- * 아니라 이 도넛이 들어있는 .donut-compact 슬롯 자체를 숨김(is-empty) -> 그만큼 왼쪽 도넛이
- * 넓게 확대되어 보임. 두 번째 지역을 고르는 순간 다시 나타남.
- * [2026-10-07] 단, 왼쪽(compareLeft)에 이미 지역이 하나 골라져 있는데 오른쪽만 비어있는
- * 경우(=지도에서 딱 한 곳만 클릭한 상태)엔 오른쪽을 숨기지 않고 "전국 평균"을 대신 채움 -
- * 그래야 지역을 하나만 클릭해도 "그 지역 vs 전국 평균" 비교가 바로 보임. 둘 다 안 골랐을
- * 때(초기 화면)는 기존처럼 왼쪽에만 전국 평균이 혼자 뜨고 오른쪽은 숨김 그대로 유지.
- */
-function renderCompareRightDonut(sidoName, year, month) {
-  const slotEl = document.getElementById('donut-right')?.closest('.donut-compact');
-
-  if (!sidoName) {
-    if (compareLeft) {
-      if (slotEl) slotEl.classList.remove('is-empty');
-      renderNationalAverageDonut(getRecordsForMonth(year, month), 'donut-right');
-      return;
-    }
-    clearDonut('donut-right');
-    if (slotEl) slotEl.classList.add('is-empty');
-    return;
-  }
-
-  const rec = getRecord(sidoName, year, month);
-  if (!rec) {
-    clearDonut('donut-right');
-    if (slotEl) slotEl.classList.add('is-empty');
-    return;
-  }
-
-  if (slotEl) slotEl.classList.remove('is-empty');
-  // 캡션 색상(분홍)은 지도에서 compareRight 지역 테두리 색·순위표 오른쪽 셀 배지 색과 동일하게 맞춤.
-  renderContractDonut('donut-right', rec.contract, sidoName, '#D4834F');
 }
 
 
