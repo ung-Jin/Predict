@@ -160,7 +160,7 @@ function renderHeatmap(years, seriesList) {
 function drawHeatChart(number, series, years) {
   document.getElementById('detailHeatName' + number).textContent = series.name;
   document.getElementById('detailHeatDot' + number).style.background = series.color;   // 이름 앞 색 점
-  document.getElementById('detailHeatFoot' + number).textContent = series.heatFoot;
+  // [2026-10-12] 아래 "최대 ... · 최소 ..." 문구(detailHeatFoot)는 화면에서 삭제 (HTML 도 같이 지움)
 
   // 칸마다 색 만들기: 같은 색에 진하기(투명도)만 다르게
   const colors = [];
