@@ -22,7 +22,8 @@
     <div class="detail-chart-body"><canvas id="detailSeasonChart"></canvas></div>
   </div>
 
-  <!-- 3) 기간별 사용량 (히트맵). 산점도의 점을 네모로 그려서 만듦. 이름과 아래 문구는 JS가 채움 -->
+  <!-- 3) 기간별 사용량 (히트맵). 산점도의 점을 네모로 그려서 만듦. 이름은 JS가 채움
+       [2026-10-12] 아래 "최대 ... · 최소 ..." 문구(.detail-heat-foot)는 삭제 -->
   <div class="card detail-chart-card detail-chart-heat">
     <div class="detail-chart-title">기간별 사용량
       <span class="detail-chart-sub">GWh · 진할수록 사용량이 많음</span>
@@ -32,13 +33,11 @@
       <div class="detail-heat-block" id="detailHeatBlock1">
         <div class="detail-heat-name"><span class="detail-heat-dot" id="detailHeatDot1"></span><span id="detailHeatName1"></span></div>
         <div class="detail-heat-box"><canvas id="detailHeatChart1"></canvas></div>
-        <div class="detail-heat-foot" id="detailHeatFoot1"></div>
       </div>
       <!-- 2번 줄 (선택 0개일 때는 JS가 숨김) -->
       <div class="detail-heat-block" id="detailHeatBlock2">
         <div class="detail-heat-name"><span class="detail-heat-dot" id="detailHeatDot2"></span><span id="detailHeatName2"></span></div>
         <div class="detail-heat-box"><canvas id="detailHeatChart2"></canvas></div>
-        <div class="detail-heat-foot" id="detailHeatFoot2"></div>
       </div>
     </div>
   </div>

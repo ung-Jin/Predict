@@ -115,7 +115,9 @@
   font-size: 14px;
   font-weight: bold;
   color: var(--ink);
-  margin: 0 0 8px 0;
+  /* [2026-10-12] 8 -> 4px. 비교표 3번째 행이 작은 화면에서 잘리는 문제 대응 -
+     #mapdiv(560px)는 유지하고 그 외 여백을 최대한 압축해 세로 공간을 확보. */
+  margin: 0 0 4px 0;
 }
 
 #mapdiv {
@@ -126,7 +128,8 @@
 
 /* ---- 증감률 diverging 범례 (지도 아래) ---- */
 .diverging-legend {
-  margin-top: 8px;
+  /* [2026-10-12] 8 -> 4px. 세로 공간 압축 (map-title과 동일 사유) */
+  margin-top: 4px;
 }
 
 .diverging-bar {
@@ -153,7 +156,8 @@
   font-size: 13px;
   font-weight: bold;
   color: var(--ink);
-  margin: 10px 0 5px 0;
+  /* [2026-10-12] 10/5 -> 6/4px. 세로 공간 압축 (map-title과 동일 사유) */
+  margin: 6px 0 4px 0;
 }
 
 .compare-grid {
@@ -185,8 +189,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* [2026-10-08] 세 열의 header 가 같은 높이를 가져야 아래 셀 세로 정렬이 맞는다 */
-  height: 28px;
+  /* [2026-10-08] 세 열의 header 가 같은 높이를 가져야 아래 셀 세로 정렬이 맞는다
+     [2026-10-12] 28 -> 24px. 세로 공간 압축 (map-title과 동일 사유) */
+  height: 24px;
   font-size: 12.5px;
   font-weight: bold;
   overflow: hidden;
@@ -216,8 +221,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* [2026-10-08] 양쪽 열과 vs 열의 셀 높이를 같이 맞춤 */
-  min-height: 44px;
+  /* [2026-10-08] 양쪽 열과 vs 열의 셀 높이를 같이 맞춤
+     [2026-10-12] 44 -> 40px + box-sizing:border-box 추가. 기존엔 box-sizing 기본값
+     (content-box)이라 min-height가 padding/border를 뺀 "내용 영역"만 가리켜서,
+     실제 렌더 높이는 40 + 패딩(8) + 테두리(1) = 49px로 의도보다 훨씬 컸다.
+     border-box로 바꾸면 min-height 40px가 패딩·테두리까지 포함한 "총 높이"가 되어
+     실측대로 40px로 줄어든다 (행 3개 기준 총 27px 절감).
+     [2026-10-12 재조정] 40 -> 45px. 안내문구(.compare-drop-hint)를 삭제하면서 생긴
+     여유(약 16px)를 표 자체로 돌려줌 - 답답해 보인다는 피드백 대응. */
+  min-height: 45px;
+  box-sizing: border-box;
   padding: 4px 4px;
   border-top: 1px solid var(--line);
   text-align: center;
@@ -257,17 +270,15 @@
   color: #A3B1C6;
 }
 
-.rank-value {
+/* [2026-10-12] 'rank-value' -> 'compare-value'. 원래 여기서도 .rank-value 를 썼는데,
+   dashboard.css 가 @import 하는 rank.css(3번 소유, "시도별 증감률 순위" 카드) 에도
+   같은 클래스명이 14px bold 로 정의돼 있어서 import 순서상 그쪽이 이겨 이 비교표 숫자가
+   의도보다 훨씬 크게 보였다. 이름을 분리해서 서로 영향받지 않게 함
+   (compare-rank.js 가 생성하는 마크업도 같이 바꿈). */
+.compare-value {
   font-size: 10.5px;
   color: var(--mute);
   margin-top: 2px;
-}
-
-.compare-drop-hint {
-  font-size: 10.5px;
-  color: #A3B1C6;
-  text-align: center;
-  margin: 5px 0 0 0;
 }
 
 /* [2026-10-07] 버그 수정: 비교표(.compare-grid + 안내문구, 실측 160px)와 분포 스트립
@@ -284,8 +295,11 @@
    고정해서, 스트립이든 비교표든 이 자리가 항상 "같은 높이"를 배정받게 함 - 그래서 아예 지도
    카드 높이 자체가 클릭으로 바뀌지 않음. 안쪽 내용(스트립/비교표)은 세로 중앙에 둬서, 둘 중
    더 짧은 스트립이 박스 위쪽에 붙지 않고 비교표와 비슷한 자리에 오게 함. */
+/* [2026-10-12] 163 -> 159px. 안내문구(.compare-drop-hint)를 삭제하고 그 공간을 위
+   .compare-col-cell/.compare-mid-cell 의 min-height(40->45px)로 돌려줬으므로,
+   박스 높이도 "헤더 24 + 셀 45*3 = 159" 로 그 실제 내용에 맞춰 다시 계산. */
 #compareRankTable {
-  height: 160px;
+  height: 159px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -531,11 +545,13 @@
 
 /* [2026-10-07] 도넛이 하나일 때는 justify-content:center 때문에 둘이 가운데 뭉치고
    좌우에 29px씩 여백이 남았다. space-between 으로 바깥으로 벌린다.
-   space-between 에서는 이 padding 이 "바깥 여백"이자 "가운데 간격을 줄이는 손잡이"다
-   (바깥을 키운 만큼 가운데가 좁아진다). 12px 일 땐 가운데가 53px 로 너무 벌어져서 22px 로.
-   결과: 좌우 22px / 도넛-범례 사이 33px. */
+   [2026-10-12] space-between 이 만드는 도넛-범례 사이 간격(33px)이 너무 멀다는 피드백으로
+   center + 고정 gap 으로 교체 (처음 10px). 10px 는 너무 붙어서 20px, 그래도 아주 조금만 더
+   넓혀달라는 요청으로 26px, 한 번 더 조금만 넓혀달라는 요청으로 30px 로 조정 - 원래 33px 보다는
+   가깝게 유지. 좌우 22px 여백은 그대로 유지해 카드 가장자리와의 거리는 전과 같다. */
 .donut-compact-row:has(.donut-compact.is-empty) {
-  justify-content: space-between;
+  justify-content: center;
+  gap: 30px;
   padding: 0 22px;
 }
 
@@ -544,8 +560,11 @@
    이때는 범례 앞의 남는 폭을 쓰게 해준다. 66px(범례) + 14px(margin-left) + 6px(gap). */
 .donut-compact-row:has(.donut-compact.is-empty) .donut-compact:not(.is-empty) {
   /* [2026-10-07] calc 만 쓰면 넓은 화면에서 247px 까지 커져 과했다.
-     min() 으로 190px 상한을 더해, 좁을 때는 calc 가/넓을 때는 190px 가 걸리게 한다. */
-  max-width: min(calc(100% - 86px), 190px);
+     min() 으로 190px 상한을 더해, 좁을 때는 calc 가/넓을 때는 190px 가 걸리게 한다.
+     [2026-10-12] 190 -> 200px. 이 카드 높이(--mid-card-height 272px)는 옆 카드·좌측 열 합계와
+     묶여 있어 못 키우고, 도넛이 들어가는 칸(.donut-compact-row)의 세로가 201px 라 정사각형인
+     도넛은 세로 한계인 200px 까지만 커질 수 있다. */
+  max-width: min(calc(100% - 86px), 200px);
 }
 
 .donut-legend-item {

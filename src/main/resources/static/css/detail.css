@@ -306,12 +306,17 @@
     font-size: 12px;
     margin-top: 2px;
 }
-.dt-col-sido { width: 24%; }
-.dt-col-fc   { width: 22%; }
-.dt-col-yoy  { width: 13%; }
-.dt-col-mape { width: 18%; }
-.dt-col-rmse { width: 11%; }
-.dt-col-mae  { width: 11%; }
+/* [2026-10-12] 시도 24% -> 18% -> 10% -> 8%. 시도 칸 안의 실제 내용(체크박스 13px + 지역명 2글자 ≈ 47px)은
+   표 폭(≈986px)의 5% 남짓인데 18%(177px) 를 차지해 오른쪽에 ~125px 빈 공간이 남았다.
+   8%(≈79px)로 줄이고, 줄어든 폭은 나머지 5개 열에 원래 비율(28:13:18:11:11)대로 나눠 합계를 100% 로 맞췄다
+   (31.7/14.3/20.4/12.8/12.8) -> 표 전체 폭은 그대로, 오른쪽 끝(MAE)은 제자리, 앞쪽 열일수록
+   왼쪽으로 더 이동한다. 8% 아래로는 A/B 뱃지·체크박스·지역명(≈51px)이 빡빡해지므로 여기가 하한. */
+.dt-col-sido { width: 8%; }
+.dt-col-fc   { width: 31.7%; }
+.dt-col-yoy  { width: 14.3%; }
+.dt-col-mape { width: 20.4%; }
+.dt-col-rmse { width: 12.8%; }
+.dt-col-mae  { width: 12.8%; }
 
 .dt-tbl tbody td {
     /* [2026-10-07] 글자가 13px로 커진 만큼 행 높이도 살짝 (7 -> 8px) */
@@ -379,14 +384,27 @@
 .dt-spark.on-a > i { background: var(--a); }
 .dt-spark.on-b > i { background: var(--b); }
 
-/* 전년대비 (상승/하락/유지) */
+/* 전년대비 (상승/하락/유지)
+   [2026-10-12] 예전엔 inline-flex 라 박스 폭이 "점+부호+숫자" 글자 수만큼만 생겨서,
+   숫자 자릿수가 행마다 다르면(-6.6% vs +0.7% vs -11.1%) 박스 자체가 오른쪽 끝에
+   들쭉날쭉하게 붙어 점(dot) 위치가 행마다 삐뚤빼뚤해 보였다.
+   display:flex + width:100% 로 셀 전체 폭을 쓰는 틀을 만들고, 그 안에서 숫자만
+   .dt-yoy-val(고정 폭)에 담아 우측정렬하면 "점 - 고정폭 숫자" 묶음이 행마다 항상
+   같은 폭이 되어, justify-content:flex-end 로 셀 오른쪽에 붙여도 점 위치가 흔들리지 않는다. */
 .dt-yoy {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 5px;
     font-size: 14px;
     font-weight: 500;
     justify-content: flex-end;
+    width: 100%;
+    box-sizing: border-box;
+}
+.dt-yoy-val {
+    /* "-11.1%" 급 7자리까지 자릿수가 흔들려도 이 폭 안에서 우측정렬로 흡수 */
+    min-width: 44px;
+    text-align: right;
 }
 .dt-yoy-up   { color: #C86B3A; }
 .dt-yoy-down { color: #3F72B5; }
