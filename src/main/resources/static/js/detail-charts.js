@@ -1,6 +1,6 @@
 /**
  * [1번 작성] 
- * ----------------------------------------------------------------------------
+ 
  * 상세 데이터 우측 차트 3종(연도별 막대, 계절 패턴, 히트맵)을 그리는 파일.
 
  * 선택이 없으면 키 자체가 없음 -> getItem()이 null
@@ -81,24 +81,20 @@ function renderYearlyBar(years, seriesList) {
   for (const series of seriesList) {
     datasets.push({
       label: series.name,
-      data: series.bar,                       // 서버가 준 리스트를 그대로 넣음
+      data: series.bar,
       backgroundColor: series.color,
-      // [2026-10-12] 지역을 0개 선택(=series 1개)했을 때 막대 하나가 칸을 거의 다 채워서
-      // 너무 두꺼워 보이는 문제. 50px 상한을 걸어둠 - 2개 선택 시 실측 막대 폭(약 48.7px)
-      // 보다 살짝 커서 선택된 상태의 모양은 그대로이고, 1개(미선택/전국)일 때만 효과가 있음.
       maxBarThickness: 50,
     });
   }
 
   if (detailBarChart !== null) {
-    detailBarChart.destroy();         // 이전 차트를 안 지우면 겹쳐서 그려짐
+    detailBarChart.destroy(); 
   }
   detailBarChart = new Chart(document.getElementById('detailBarChart'), {
     type: 'bar',
     data: { labels: years, datasets: datasets },
     options: { maintainAspectRatio: false },  // 카드 크기에 맞춰 늘어나게
   });
-  // TODO: 시안의 막대 위 값 숫자, "전년 대비 %" 표시
 }
 
 
@@ -108,10 +104,10 @@ function renderSeasonLine(seriesList) {
   for (const series of seriesList) {
     datasets.push({
       label: series.name,
-      data: series.season,                    // 서버가 계산해 준 12개 값
+      data: series.season, 
       borderColor: series.color,
       backgroundColor: series.color,
-      tension: 0.3,                           // 선을 살짝 부드럽게
+      tension: 0.3,                   
     });
   }
 
@@ -143,10 +139,6 @@ function renderHeatmap(years, seriesList) {
     detailHeatChart2 = null;
   }
 
-  // [2026-10-12] 2번 줄 자리를 보일지/숨길지를 "차트를 그리기 전에" 먼저 정한다.
-  // 예전엔 1번 차트를 먼저 그리고 나서 2번 자리를 켜고 껐는데, 그러면 1번 차트가 이전 폭
-  // (0선택=420px / 1·2선택=348px) 그대로 그려진 뒤 자리가 바뀌면서 뒤늦게 크기를 따라가
-  // "넓게 보였다가 줄어드는"(또는 반대) 깜빡임이 있었다.
   const block2 = document.getElementById('detailHeatBlock2');
   block2.style.display = seriesList.length === 2 ? '' : 'none';
 
@@ -159,23 +151,17 @@ function renderHeatmap(years, seriesList) {
   }
 }
 
-// 히트맵 하나 그리기. number 는 1 또는 2 (HTML의 detailHeatChart1, detailHeatChart2 ...)
+// 히트맵 하나 그리기. number 는 1 또는 2 
 function drawHeatChart(number, series, years) {
   document.getElementById('detailHeatName' + number).textContent = series.name;
-  document.getElementById('detailHeatDot' + number).style.background = series.color;   // 이름 앞 색 점
-  // [2026-10-12] 아래 "최대 ... · 최소 ..." 문구(detailHeatFoot)는 화면에서 삭제 (HTML 도 같이 지움)
+  document.getElementById('detailHeatDot' + number).style.background = series.color; 
 
-  // 칸마다 색 만들기: 같은 색에 진하기(투명도)만 다르게
   const colors = [];
   for (const point of series.heat) {
     colors.push('rgba(' + series.rgb + ', ' + point.opacity + ')');
   }
 
-  // 네모 크기: 차트 가로 폭을 12칸(월)으로, 세로 폭을 연도 수로 나눠서 "더 좁은 쪽"에 맞춤.
-  // [2026-10-12] 예전엔 가로 폭만 기준으로 삼아서, 세로 한 칸 높이(연도 수가 많을 때)가
-  // 가로 한 칸 폭보다 좁으면 정사각형이 위아래 칸을 침범해 겹쳐 보였다 (실측: 가로 24.2px
-  // 칸인데 세로는 18.8px 칸이라 3.4px씩 겹침). min() 으로 둘 중 작은 쪽에 맞추면 항상
-  // 칸 안에 들어가 겹치지 않는다 (대신 가로가 넉넉한 경우 칸 사이 여백이 조금 생길 수 있음).
+
   function cellRadius(context) {
     const area = context.chart.chartArea;     // 축 글자를 뺀, 네모가 그려지는 영역
     if (!area) {
@@ -184,7 +170,7 @@ function drawHeatChart(number, series, years) {
     const cellWidth = area.width / 12;
     const cellHeight = area.height / years.length;
     const cellSize = Math.min(cellWidth, cellHeight);
-    return (cellSize - 2) / 1.414;            // 틈 2px. Chart.js 네모는 반지름의 1.414배 크기로 그려짐
+    return (cellSize - 2) / 1.414;            
   }
 
   const chart = new Chart(document.getElementById('detailHeatChart' + number), {
