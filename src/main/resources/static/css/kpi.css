@@ -87,7 +87,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 14px;
+  /* [2026-10-12] 14 -> 15px. 옆 숫자(.kpi-value 24px/좁은 화면 17px)보다는 여전히 작게 유지. */
+  font-size: 15px;
   color: var(--mute);
   white-space: nowrap;
 }

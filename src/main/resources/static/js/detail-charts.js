@@ -83,6 +83,10 @@ function renderYearlyBar(years, seriesList) {
       label: series.name,
       data: series.bar,                       // 서버가 준 리스트를 그대로 넣음
       backgroundColor: series.color,
+      // [2026-10-12] 지역을 0개 선택(=series 1개)했을 때 막대 하나가 칸을 거의 다 채워서
+      // 너무 두꺼워 보이는 문제. 50px 상한을 걸어둠 - 2개 선택 시 실측 막대 폭(약 48.7px)
+      // 보다 살짝 커서 선택된 상태의 모양은 그대로이고, 1개(미선택/전국)일 때만 효과가 있음.
+      maxBarThickness: 50,
     });
   }
 
@@ -164,14 +168,20 @@ function drawHeatChart(number, series, years) {
     colors.push('rgba(' + series.rgb + ', ' + point.opacity + ')');
   }
 
-  // 네모 크기: 차트 가로 폭을 12칸으로 나눠서 정함 -> 화면 폭이 달라져도 칸에 딱 맞음
+  // 네모 크기: 차트 가로 폭을 12칸(월)으로, 세로 폭을 연도 수로 나눠서 "더 좁은 쪽"에 맞춤.
+  // [2026-10-12] 예전엔 가로 폭만 기준으로 삼아서, 세로 한 칸 높이(연도 수가 많을 때)가
+  // 가로 한 칸 폭보다 좁으면 정사각형이 위아래 칸을 침범해 겹쳐 보였다 (실측: 가로 24.2px
+  // 칸인데 세로는 18.8px 칸이라 3.4px씩 겹침). min() 으로 둘 중 작은 쪽에 맞추면 항상
+  // 칸 안에 들어가 겹치지 않는다 (대신 가로가 넉넉한 경우 칸 사이 여백이 조금 생길 수 있음).
   function cellRadius(context) {
     const area = context.chart.chartArea;     // 축 글자를 뺀, 네모가 그려지는 영역
     if (!area) {
       return 0;                               // 맨 처음에는 아직 크기를 모름
     }
     const cellWidth = area.width / 12;
-    return (cellWidth - 2) / 1.414;           // 틈 2px. Chart.js 네모는 반지름의 1.414배 크기로 그려짐
+    const cellHeight = area.height / years.length;
+    const cellSize = Math.min(cellWidth, cellHeight);
+    return (cellSize - 2) / 1.414;            // 틈 2px. Chart.js 네모는 반지름의 1.414배 크기로 그려짐
   }
 
   const chart = new Chart(document.getElementById('detailHeatChart' + number), {

@@ -452,11 +452,13 @@ function makeYoyCell(row) {
   let yoyTxt = yoy.toFixed(1) + '%';
   if (yoy > 0) yoyTxt = '+' + yoyTxt;
 
+  // [2026-10-12] 숫자를 고정폭 .dt-yoy-val 로 감싸서 행마다 점(dot) 위치가
+  // 흔들리지 않게 함 (CSS 쪽 detail.css .dt-yoy-val 참고). 텍스트/로직은 그대로.
   return (
     '<td>' +
       '<span class="' + yoyCls + '">' +
         '<span class="dt-yoy-dot"></span>' +
-        yoyTxt +
+        '<span class="dt-yoy-val">' + yoyTxt + '</span>' +
       '</span>' +
     '</td>'
   );

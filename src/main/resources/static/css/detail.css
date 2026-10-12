@@ -306,8 +306,11 @@
     font-size: 12px;
     margin-top: 2px;
 }
-.dt-col-sido { width: 24%; }
-.dt-col-fc   { width: 22%; }
+/* [2026-10-12] 시도 24% -> 18%. 체크박스(13px)+뱃지+지역명(최대 4글자) 기준 18%면 충분한
+   여유가 있고, 예측~MAE 열은 서로 몰려있는 간격을 그대로 유지하기 위해 손대지 않았다.
+   줄어든 6% 는 바로 옆 8월예측 열(fc)에 몰아줘서 숫자+스파크바가 덜 빡빡하게 했다. */
+.dt-col-sido { width: 18%; }
+.dt-col-fc   { width: 28%; }
 .dt-col-yoy  { width: 13%; }
 .dt-col-mape { width: 18%; }
 .dt-col-rmse { width: 11%; }
@@ -379,14 +382,27 @@
 .dt-spark.on-a > i { background: var(--a); }
 .dt-spark.on-b > i { background: var(--b); }
 
-/* 전년대비 (상승/하락/유지) */
+/* 전년대비 (상승/하락/유지)
+   [2026-10-12] 예전엔 inline-flex 라 박스 폭이 "점+부호+숫자" 글자 수만큼만 생겨서,
+   숫자 자릿수가 행마다 다르면(-6.6% vs +0.7% vs -11.1%) 박스 자체가 오른쪽 끝에
+   들쭉날쭉하게 붙어 점(dot) 위치가 행마다 삐뚤빼뚤해 보였다.
+   display:flex + width:100% 로 셀 전체 폭을 쓰는 틀을 만들고, 그 안에서 숫자만
+   .dt-yoy-val(고정 폭)에 담아 우측정렬하면 "점 - 고정폭 숫자" 묶음이 행마다 항상
+   같은 폭이 되어, justify-content:flex-end 로 셀 오른쪽에 붙여도 점 위치가 흔들리지 않는다. */
 .dt-yoy {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 5px;
     font-size: 14px;
     font-weight: 500;
     justify-content: flex-end;
+    width: 100%;
+    box-sizing: border-box;
+}
+.dt-yoy-val {
+    /* "-11.1%" 급 7자리까지 자릿수가 흔들려도 이 폭 안에서 우측정렬로 흡수 */
+    min-width: 44px;
+    text-align: right;
 }
 .dt-yoy-up   { color: #C86B3A; }
 .dt-yoy-down { color: #3F72B5; }

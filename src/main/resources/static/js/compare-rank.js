@@ -75,18 +75,22 @@ function renderCompareRankTable(containerId, leftSido, rightSido, leftRec, right
 }
 
 function renderColCell(metric, rec) {
+  // [2026-10-12] 'rank-value' -> 'compare-value'. 같은 클래스명을 rank.css(대시보드
+  // "시도별 증감률 순위" 카드, 14px bold)가 쓰고 있어서, dashboard.css의
+  // @import url("rank.css") 때문에 이 비교표 쪽 숫자(원래 map.css 의도: 10.5px 연한 회색)가
+  // 14px bold 로 덮어써지고 있었다. 이름을 분리해 두 카드가 서로 영향받지 않게 함.
   if (!rec) {
     return `
       <div class="compare-col-cell is-empty">
         <span class="rank-badge rank-badge-empty">-</span>
-        <div class="rank-value">-</div>
+        <div class="compare-value">-</div>
       </div>
     `;
   }
   return `
     <div class="compare-col-cell">
       <span class="rank-badge">${formatRank(rec[metric.rankKey])}</span>
-      <div class="rank-value">${metric.formatValue(rec)}</div>
+      <div class="compare-value">${metric.formatValue(rec)}</div>
     </div>
   `;
 }
