@@ -55,6 +55,9 @@ function renderCompareRankTable(containerId, leftSido, rightSido, leftRec, right
   const rightCells = COMPARE_METRICS.map((m) => renderColCell(m, rightRec)).join('');
   const midCells = COMPARE_METRICS.map((m) => `<div class="compare-mid-cell">${m.label}</div>`).join('');
 
+  // [2026-10-12] 안내문구(지도 클릭 또는...) 삭제. 답답해 보인다는 피드백으로
+  // 그 자리를 표 자체에 돌려줌 (map.css .compare-col-cell/.compare-mid-cell 의
+  // min-height/#compareRankTable 쪽에서 늘어난 공간을 셀에 반영).
   el.innerHTML = `
     <div class="compare-grid">
       <div class="compare-side compare-col" data-slot="left">
@@ -70,7 +73,6 @@ function renderCompareRankTable(containerId, leftSido, rightSido, leftRec, right
         ${rightCells}
       </div>
     </div>
-    <p class="compare-drop-hint">지도 클릭 또는 위쪽 지역비교 칸에서 선택 (최대 2곳)</p>
   `;
 }
 
