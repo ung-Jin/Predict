@@ -35,7 +35,11 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.7.7/dist/axios.min.js"></script>
+<!-- 도넛: 파이 조각 위 % 숫자 플러그인 -> 공용 도넛 그리기(donut.js) 순서로 로드해야 함 -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script th:src="@{/js/donut.js}"></script>
 <script th:src="@{/js/detail-charts.js}"></script>
 <script th:src="@{/js/detail.js}"></script>
+<script th:src="@{/js/detail-donut.js}"></script>
 </body>
 </html>

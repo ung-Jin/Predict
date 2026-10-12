@@ -28,7 +28,9 @@
    1.35fr : 1fr ≈ 좌 58% / 우 42% */
 .detail-body {
     display: grid;
-    grid-template-columns: 1.35fr 1fr;
+    /* [2026-10-12] 1.35fr:1fr -> 1.1fr:1fr. 우측 맨 위 줄에 도넛 카드가 막대 카드 옆으로 들어오면서
+       우측 열이 더 넓어야 해서, 그만큼 좌측 표가 줄어든다 (표 최소 필요 폭은 약 600px). */
+    grid-template-columns: 1.1fr 1fr;
     gap: 16px;
     /* [2026-10-08 재조정] 좌(17행 자연 신장) ↔ 우(차트 3장) 세로 끝이 어긋나던 문제.
        align-items:stretch 로 두 열의 세로 높이를 같게 묶는다. 좌측 표가 "주"가 되어

@@ -6,12 +6,34 @@
 
 <div th:fragment="detail_charts" class="detail-charts">
 
-  <!-- 1) 연도별 월평균 사용량 (막대) -->
-  <div class="card detail-chart-card">
-    <div class="detail-chart-title">연도별 월평균 사용량
-      <span class="detail-chart-sub">GWh · 마지막 연도는 일부 달만 평균</span>
+  <!-- 맨 위 한 줄: 왼쪽 = 연도별 월평균 사용량(막대), 오른쪽 = 계약종별 사용 비중(도넛, 대시보드에서 옮겨 옴) -->
+  <div class="detail-top-row">
+
+    <!-- 1) 연도별 월평균 사용량 (막대) -->
+    <div class="card detail-chart-card detail-bar-card">
+      <div class="detail-chart-title">연도별 월평균 사용량
+        <span class="detail-chart-sub">GWh · 마지막 연도는 일부 달만 평균</span>
+      </div>
+      <div class="detail-chart-body"><canvas id="detailBarChart"></canvas></div>
     </div>
-    <div class="detail-chart-body"><canvas id="detailBarChart"></canvas></div>
+
+    <!-- 1-2) 계약종별 사용 비중 (도넛). 그리는 코드는 donut.js(공용) + detail-donut.js.
+         도넛 칸(#donut-slot-right)은 두 번째 지역을 고르기 전까지 숨김(is-empty). -->
+    <div class="card detail-chart-card detail-donut-card">
+      <div class="detail-chart-title">계약종별 사용 비중
+        <span class="detail-chart-sub" id="detailDonutRef"></span>
+      </div>
+      <div class="detail-chart-body detail-donut-body">
+        <div class="donut-compact" id="donut-slot-left">
+          <div class="donut-canvas-wrap"><canvas id="donut-left"></canvas></div>
+        </div>
+        <div class="donut-compact is-empty" id="donut-slot-right">
+          <div class="donut-canvas-wrap"><canvas id="donut-right"></canvas></div>
+        </div>
+        <div id="donutLegend" class="donut-legend"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- 2) 계절 패턴 (선) -->

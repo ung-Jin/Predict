@@ -93,7 +93,8 @@ function renderYearlyBar(years, seriesList) {
   detailBarChart = new Chart(document.getElementById('detailBarChart'), {
     type: 'bar',
     data: { labels: years, datasets: datasets },
-    options: { maintainAspectRatio: false },  // 카드 크기에 맞춰 늘어나게
+    // datalabels: 도넛용 숫자 표시 플러그인(donut.js 가 전역 등록)이 막대마다 숫자를 찍지 않게 끔
+    options: { maintainAspectRatio: false, plugins: { datalabels: { display: false } } },  // 카드 크기에 맞춰 늘어나게
   });
 }
 
@@ -120,7 +121,7 @@ function renderSeasonLine(seriesList) {
       labels: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
       datasets: datasets,
     },
-    options: { maintainAspectRatio: false },
+    options: { maintainAspectRatio: false, plugins: { datalabels: { display: false } } },
   });
 }
 
@@ -189,6 +190,7 @@ function drawHeatChart(number, series, years) {
     options: {
       maintainAspectRatio: false,
       plugins: {
+        datalabels: { display: false },       // 도넛용 숫자 표시 플러그인이 칸마다 숫자를 찍지 않게 끔
         legend: { display: false },           // 이름은 차트 위에 따로 적어서 범례는 끔
         tooltip: {
           callbacks: {
