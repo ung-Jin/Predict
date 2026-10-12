@@ -143,16 +143,19 @@ function renderHeatmap(years, seriesList) {
     detailHeatChart2 = null;
   }
 
+  // [2026-10-12] 2번 줄 자리를 보일지/숨길지를 "차트를 그리기 전에" 먼저 정한다.
+  // 예전엔 1번 차트를 먼저 그리고 나서 2번 자리를 켜고 껐는데, 그러면 1번 차트가 이전 폭
+  // (0선택=420px / 1·2선택=348px) 그대로 그려진 뒤 자리가 바뀌면서 뒤늦게 크기를 따라가
+  // "넓게 보였다가 줄어드는"(또는 반대) 깜빡임이 있었다.
+  const block2 = document.getElementById('detailHeatBlock2');
+  block2.style.display = seriesList.length === 2 ? '' : 'none';
+
   // 1번 줄
   detailHeatChart1 = drawHeatChart(1, seriesList[0], years);
 
-  // 2번 줄: 있으면 그리고, 없으면 자리를 숨김
-  const block2 = document.getElementById('detailHeatBlock2');
+  // 2번 줄: 있을 때만 그림
   if (seriesList.length === 2) {
-    block2.style.display = '';
     detailHeatChart2 = drawHeatChart(2, seriesList[1], years);
-  } else {
-    block2.style.display = 'none';
   }
 }
 

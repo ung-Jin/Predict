@@ -559,8 +559,11 @@
    이때는 범례 앞의 남는 폭을 쓰게 해준다. 66px(범례) + 14px(margin-left) + 6px(gap). */
 .donut-compact-row:has(.donut-compact.is-empty) .donut-compact:not(.is-empty) {
   /* [2026-10-07] calc 만 쓰면 넓은 화면에서 247px 까지 커져 과했다.
-     min() 으로 190px 상한을 더해, 좁을 때는 calc 가/넓을 때는 190px 가 걸리게 한다. */
-  max-width: min(calc(100% - 86px), 190px);
+     min() 으로 190px 상한을 더해, 좁을 때는 calc 가/넓을 때는 190px 가 걸리게 한다.
+     [2026-10-12] 190 -> 200px. 이 카드 높이(--mid-card-height 272px)는 옆 카드·좌측 열 합계와
+     묶여 있어 못 키우고, 도넛이 들어가는 칸(.donut-compact-row)의 세로가 201px 라 정사각형인
+     도넛은 세로 한계인 200px 까지만 커질 수 있다. */
+  max-width: min(calc(100% - 86px), 200px);
 }
 
 .donut-legend-item {
