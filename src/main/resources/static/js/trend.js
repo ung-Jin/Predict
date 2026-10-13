@@ -75,8 +75,14 @@ const trendDrawEffect = {
     if(trendDrawRatio >= 1){
       trendDrawDone = true;   //끝났으면 다음부터는 오려내지 않는다
     }else{
-      //다음 화면이 그려질 때 다시 불러 달라고 브라우저에 부탁한다
-      requestAnimationFrame(function(){ chart.draw(); });
+      /* 다음 화면이 그려질 때 다시 불러 달라고 브라우저에 부탁한다.
+         그사이 지역이 바뀌어 이 차트가 지워졌을 수 있으므로,
+         지금 화면에 있는 차트일 때만 그린다. (지워진 차트에 그리면 오류가 난다) */
+      requestAnimationFrame(function(){
+        if(chart === savedTrendChart){
+          chart.draw();
+        }
+      });
     }
   }
 };
@@ -249,12 +255,20 @@ function drawTrendChart(chartData){
   });
 }
 
+/* 요청 번호. 지역을 빠르게 바꾸면 먼저 보낸 요청의 응답이 나중에 도착할 수 있다.
+   그러면 이전 지역 값으로 화면이 덮이므로, 가장 최근 요청의 응답만 그린다. */
+let trendRequestNo = 0;
+
 //화면이 열리면 추이 데이터를 조회하는 함수
 async function getTrendData(){
+  const myNo = ++trendRequestNo;   //이번 요청 번호
   let resultData;
 
   try{
     const response = await axios.get('/chart-api/trend', kpiRequestParams());
+    if(myNo !== trendRequestNo){
+      return;   //그사이 더 최근 요청이 있었으면 이 응답은 버린다
+    }
     resultData = response.data;   //자바에서 리턴받은 데이터
     console.log(resultData);
 

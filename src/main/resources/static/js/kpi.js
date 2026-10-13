@@ -91,12 +91,20 @@ function drawKpiCards(chartData){
               nameList, mapeList, '%');
 }
 
+/* 요청 번호. 지역을 빠르게 바꾸면 먼저 보낸 요청의 응답이 나중에 도착할 수 있다.
+   그러면 이전 지역 값으로 화면이 덮이므로, 가장 최근 요청의 응답만 그린다. */
+let kpiRequestNo = 0;
+
 //화면이 열리면 카드 데이터를 조회하는 함수
 async function getKpiData(){
+  const myNo = ++kpiRequestNo;   //이번 요청 번호
   let resultData;
 
   try{
     const response = await axios.get('/chart-api/card', kpiRequestParams());
+    if(myNo !== kpiRequestNo){
+      return;   //그사이 더 최근 요청이 있었으면 이 응답은 버린다
+    }
     resultData = response.data;   //자바에서 리턴받은 데이터
     console.log(resultData);
 

@@ -83,9 +83,22 @@ function kpiRequestParams(){
 }
 
 /* 지도에서 지역을 고르거나 뺄 때마다 2번이 document 에 region:selected 를 보낸다.
-   각 차트가 이 함수로 자기 "다시 그리기" 함수를 걸어두면 선택이 바뀔 때마다 다시 그려진다. */
+   각 차트가 이 함수로 자기 "다시 그리기" 함수를 걸어두면 선택이 바뀔 때마다 다시 그려진다.
+
+   [2026-10-13] 2번 지도는 페이지가 열릴 때도 이 알림을 한 번 보낸다 (아무것도 안 골랐는데도).
+   그대로 받으면 요청이 두 번 나가고 차트가 두 번 그려지므로,
+   선택이 실제로 바뀌었을 때만 다시 그린다. */
 function onRegionChange(redraw){
-  document.addEventListener('region:selected', redraw);
+  let last = JSON.stringify(kpiSelectedRegions());   //처음 그릴 때의 선택
+
+  document.addEventListener('region:selected', function(){
+    const now = JSON.stringify(kpiSelectedRegions());
+    if(now === last){
+      return;   //선택이 그대로면 다시 그리지 않는다
+    }
+    last = now;
+    redraw();
+  });
 }
 
 /* 44063 -> '44,063' */
