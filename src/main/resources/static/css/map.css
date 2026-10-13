@@ -1,13 +1,12 @@
 /* ============================================================================
    [2번 소유] /static/css/map.css
    ============================================================================
-   이 파일은 fragments/map.html (지도 + 순위표) 과 fragments/donut.html (계약종별
-   도넛) 두 조각이 공유하는 스타일 시트입니다. 두 조각 모두 2번 담당이라 한 파일에
-   같이 둡니다.
+   이 파일은 fragments/map.html (지도 + 순위표) 의 스타일 시트입니다.
+   [2026-10-12] 계약종별 도넛(fragments/donut.html)은 상세 데이터 페이지로 옮겨 가서
+   (detail-charts.css 에 같은 스타일이 있음) 도넛 스타일은 이 파일에서 지웠습니다.
 
    여기에 들어있는 클래스 접두어 규칙 (다른 팀원분 파일과 이름 안 겹치게 하기 위함):
      - map-*           : 지도 카드 안쪽 요소
-     - donut-*         : 도넛 카드 안쪽 요소
      - chip-*          : 선택 지역 칩(원래 1번 담당, 지도랑 바로 이어져서 2번이 같이 작업)
      - compare-*       : 지도 하단 "전국 내 위치 표"의 grid/셀들
      - rank-*          : 순위 배지 (compare-* 안에서만 씀)
@@ -15,10 +14,10 @@
      - diverging-*     : 지도 색상 범례 (감소←→증가 그라데이션 바)
 
    ⚠ 팀장님 리뷰용 안내 (병합 시 참고):
-     - 이 파일을 지우면 지도/도넛/순위표 스타일이 전부 깨집니다 (기능은 살아있지만
+     - 이 파일을 지우면 지도/순위표 스타일이 전부 깨집니다 (기능은 살아있지만
        레이아웃이 무너져 보임).
-     - 안에 들어있는 셀렉터는 전부 2번 조각(fragments/map.html, fragments/donut.html)
-       안에서만 사용되므로, 다른 팀원분들 CSS와 충돌하지 않습니다.
+     - 안에 들어있는 셀렉터는 전부 2번 조각(fragments/map.html) 안에서만 사용되므로,
+       다른 팀원분들 CSS와 충돌하지 않습니다.
      - 다른 팀원분들 CSS 파일: common.css(1번), dashboard.css(3번), detail.css(4번).
        각자 자기 접두어(kpi-, trend-, detail- 등)만 사용하면 서로 안 겹칩니다.
    ============================================================================ */
@@ -212,7 +211,7 @@
 .compare-mid-header {
   color: #A3B1C6;
   font-weight: normal;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .compare-col-cell,
@@ -238,7 +237,7 @@
 }
 
 .compare-mid-cell {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--mute);
 }
 
@@ -276,7 +275,7 @@
    의도보다 훨씬 크게 보였다. 이름을 분리해서 서로 영향받지 않게 함
    (compare-rank.js 가 생성하는 마크업도 같이 바꿈). */
 .compare-value {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--mute);
   margin-top: 2px;
 }
@@ -404,180 +403,4 @@
   color: #A3B1C6;
   text-align: center;
   margin: 12px 0;
-}
-
-/* ---- 계약종별 도넛 카드 자체 (dashboard.html의 .row 안, kpi 카드 바로 아래) ----
-   [2026-09-30 개편] 도넛 3개(지역A/B + 전국평균 고정) → 2개로 축소. 전국 평균은 왼쪽
-   도넛의 기본값으로 흡수함(지역 미선택 시 전국평균, 선택하면 그 지역 - js/map-app.js).
-   카드 폭은 50% → 30%로 줄여서 도넛에 공간 몰아줌. flex 기본 min-width:auto로
-   안쪽 도넛을 따라 커지려는 걸 min-width:0으로 막음. */
-.donut {
-  /* [2026-10-07] 30% -> 38%. 지도 카드를 480px 로 고정하면서 .left 가 좁아졌고,
-     그 여파로 .row 의 30% 였던 이 카드가 190px 까지 줄어 캔버스에 44px 밖에 안 남았다
-     (범례 66px + 좌우 여백을 빼고 나면). 도넛이 점처럼 작아져서 폭을 늘린다. */
-  flex: 0 0 38%;
-  max-width: 38%;
-  min-width: 0;
-  box-sizing: border-box;
-  /* 안쪽 캔버스가 조금이라도 삐져나오면 카드 밖으로 새지 않게 잘라줌 (도넛이 카드 밖으로
-     보이던 문제 방지). 카드 자체 폭은 위 flex/max-width로 이미 고정돼 있음. */
-  overflow: hidden;
-  /* [2026-10-06] 옆 카드(forecast3/rank)랑 높이를 맞추려고 flex 기본값(stretch)에 맡겼었는데,
-     도넛·범례는 작은 크기라 카드 아래쪽에 큰 빈 여백이 남는 문제가 있었음
-     (도넛 폭이 카드 폭의 30%로 이미 좁게 고정돼 있어서, 세로 공간이 아무리 남아도
-     도넛을 그만큼 키울 수 없음 - 가로 폭이 먼저 한계에 걸림).
-     [2026-10-07] align-self:center 로 피해 봤지만, 그러면 카드 테두리 자체가
-     옆 카드보다 짧아서 세 카드의 위/아래 선이 안 맞는 게 더 거슬렸음.
-     결론: 높이를 못 박지 않고 .row 의 stretch 에 맡겨 옆 카드(rank/forecast3)와
-     테두리 높이를 맞추고(= 세 카드의 위/아래 선이 정렬됨), 남는 세로 공간은
-     아래 .donut-compact-row 가 flex:1 로 받아 안쪽 내용을 세로 중앙에 놓는다.
-     빈 여백이 위아래로 반씩 나뉘어 덜 어색하다. */
-  display: flex;
-  flex-direction: column;
-  height: var(--mid-card-height);
-}
-
-/* 헤더는 3분할 grid로 잡아서, 카드 폭과 무관하게 제목은 카드 정중앙,
-   기준월은 카드 오른쪽 끝에 정렬되도록 함.
-   [왼쪽 spacer 1fr | 가운데 제목 auto | 오른쪽 기준월 1fr]  */
-/* [2026-10-07] 3열 grid(spacer | 제목 | 기준월)에서 세로 2줄로 바꿈.
-   카드가 좁아지면서 제목과 기준월이 한 줄에 못 들어가 기준월 글자가 세로로
-   쪼개지고 제목 영역이 65px 까지 부풀었다. 세로로 쌓으면 34px 로 줄고
-   그만큼 도넛에 세로 공간이 더 간다. */
-.donut-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 14px;
-  font-weight: bold;
-  color: var(--ink);
-  margin: 0 0 6px 0;
-}
-
-.donut-title-spacer {
-  display: none;   /* 세로 배치로 바뀌어 더 이상 필요 없음 */
-}
-
-.donut-title-text {
-  text-align: center;
-}
-
-/* 카드 헤더 오른쪽 끝에 "· 2026년 7월 기준" 형태로 붙는 작은 회색 텍스트. */
-.donut-ref-month {
-  white-space: nowrap;
-  font-size: 10.5px;
-  color: #888;
-  font-weight: normal;
-  justify-self: end;   /* grid 셀 안에서 오른쪽 끝 정렬 */
-  text-align: right;
-}
-
-/* 도넛 2개(왼쪽/오른쪽) + 범례를 한 줄에 가로로 배치.
-   오른쪽 도넛은 두 번째 지역을 선택하기 전까지 .is-empty로 숨겨짐(map-app.js 토글).
-   justify-content:center는 오른쪽 도넛이 숨겨졌을 때도 도넛+범례가 카드 가운데에 모이게 함. */
-.donut-compact-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  /* [2026-10-07] 카드가 .row 높이만큼 늘어나면서 남는 세로 공간을
-     여기서 받아 안쪽(도넛 + 범례)을 세로 중앙에 놓는다. */
-  flex: 1;
-  min-height: 0;
-}
-
-/* [2026-09-30] 도넛 1개(전국평균)만 떠 있을 때도 2개 떠 있을 때와 똑같은 크기가 되게
-   max-width로 캡을 걸음. "범례(56px) + 간격(12px)을 뺀 나머지를 둘이 반씩 나눌 때의 폭" */
-.donut-compact {
-  flex: 1 1 0;
-  /* [2026-10-07] 범례 폭을 56 -> 66px 로 키웠으므로 그 값도 같이 반영.
-     /2 는 "도넛 2개가 나란히 설 때" 서로 폭을 반씩 나눠 갖게 하는 상한이다. */
-  max-width: calc((100% - 66px - 12px) / 2);
-  min-width: 0; /* flex 기본 min-width:auto가 안쪽 캔버스를 따라 커지는 것 방지 */
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 아직 선택 안 된 오른쪽 도넛 슬롯은 레이아웃에서 아예 빼버림 (display:none)
-   -> 왼쪽 도넛(전국평균/첫 선택 지역)이 legend 앞까지 남는 폭을 전부 차지해서 커짐. */
-.donut-compact.is-empty {
-  display: none;
-}
-
-/* [2026-09-30] 높이는 여기서 안 잡고 donut.js의 keepCanvasWrapSquare()가 JS로
-   폭=높이를 직접 넣어줌. (CSS 트릭 aspect-ratio/padding-bottom 둘 다 Chart.js가
-   컨테이너 높이를 반토막으로 오인식해서 도넛이 쭈그러드는 버그가 있어 포기) */
-.donut-canvas-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-}
-
-/* 계약종별 공통 범례. 예전엔 도넛 아래 가로 한 줄이었는데, 도넛 공간을 더 확보하기 위해
-   오른쪽 옆 칼럼으로 옮기고 세로로 나열함. 폭을 최소한으로 줄여서 그만큼 도넛 쪽에
-   더 넓은 폭을 몰아줌. */
-.donut-legend {
-  flex: 0 0 auto;
-  width: 66px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  /* [2026-10-06] 카드 높이가 늘어난 만큼 범례 항목 세로 간격도 조금 더 벌려서 숨통 틔워줌 */
-  gap: 11px;
-  margin: 0;
-  /* [2026-10-07] 9.5px 는 너무 작아서 11px 로. 폰트가 커진 만큼 폭도 56 -> 66px */
-  font-size: 11px;
-  color: var(--mute);
-  line-height: 1.2;
-}
-
-/* 도넛이 1개만 보일 때(전국 평균이거나 한 곳만 고른 상태)는 옆에 자리가 남으므로
-   범례를 오른쪽으로 더 띄우고 글자도 한 단계 키운다.
-   오른쪽 도넛 칸에 붙는 is-empty 클래스를 :has() 로 읽어서 분기하므로 JS 수정이 없다.
-   도넛 2개일 때는 폭이 빡빡해서 이 블록이 적용되지 않는다(= 글자만 위의 11px). */
-.donut-compact-row:has(.donut-compact.is-empty) .donut-legend {
-  font-size: 11.5px;
-}
-
-/* [2026-10-07] 도넛이 하나일 때는 justify-content:center 때문에 둘이 가운데 뭉치고
-   좌우에 29px씩 여백이 남았다. space-between 으로 바깥으로 벌린다.
-   [2026-10-12] space-between 이 만드는 도넛-범례 사이 간격(33px)이 너무 멀다는 피드백으로
-   center + 고정 gap 으로 교체 (처음 10px). 10px 는 너무 붙어서 20px, 그래도 아주 조금만 더
-   넓혀달라는 요청으로 26px, 한 번 더 조금만 넓혀달라는 요청으로 30px 로 조정 - 원래 33px 보다는
-   가깝게 유지. 좌우 22px 여백은 그대로 유지해 카드 가장자리와의 거리는 전과 같다. */
-.donut-compact-row:has(.donut-compact.is-empty) {
-  justify-content: center;
-  gap: 30px;
-  padding: 0 22px;
-}
-
-/* [2026-10-07] 도넛이 하나만 보일 때(전국 평균이거나 한 곳만 선택)는 위의 /2 상한이
-   쓸데없이 폭을 절반으로 깎아서 도넛이 점처럼 작아진다(206px 카드에서 69px).
-   이때는 범례 앞의 남는 폭을 쓰게 해준다. 66px(범례) + 14px(margin-left) + 6px(gap). */
-.donut-compact-row:has(.donut-compact.is-empty) .donut-compact:not(.is-empty) {
-  /* [2026-10-07] calc 만 쓰면 넓은 화면에서 247px 까지 커져 과했다.
-     min() 으로 190px 상한을 더해, 좁을 때는 calc 가/넓을 때는 190px 가 걸리게 한다.
-     [2026-10-12] 190 -> 200px. 이 카드 높이(--mid-card-height 272px)는 옆 카드·좌측 열 합계와
-     묶여 있어 못 키우고, 도넛이 들어가는 칸(.donut-compact-row)의 세로가 201px 라 정사각형인
-     도넛은 세로 한계인 200px 까지만 커질 수 있다. */
-  max-width: min(calc(100% - 86px), 200px);
-}
-
-.donut-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-
-.donut-legend-swatch {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  display: inline-block;
-  flex-shrink: 0;
 }

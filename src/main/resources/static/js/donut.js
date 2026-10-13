@@ -1,12 +1,11 @@
 /**
  * [2번 소유] /static/js/donut.js
  * -----------------------------------------------------------------
- * fragments/donut.html에서 로드됨. map-app.js보다 먼저 로드되어야 함(대시보드
- * 조립 순서상 자동으로 그렇게 됨: 왼쪽 컬럼의 donut 조각이 오른쪽 컬럼의 map
- * 조각보다 먼저 렌더됨).
+ * [2026-10-12] 상세 데이터 페이지(detail.html)에서 로드됨. detail-donut.js 보다 먼저 로드되어야 함.
+ * (예전에는 대시보드의 fragments/donut.html 에서 로드됐지만, 도넛이 상세 페이지로 옮겨갔다.)
  * 노출: CONTRACT_COLOR_MAP, renderContractDonut(...), clearDonut(...),
  *       renderContractLegend(containerId)
- * 이 파일을 지우면 도넛이 안 그려지고, map-app.js가 함수 못 찾아서 죽음.
+ * 이 파일을 지우면 상세 페이지의 도넛이 안 그려지고, detail-donut.js가 함수 못 찾아서 죽음.
  * -----------------------------------------------------------------
  *
  * 계약종별 비중 도넛차트 (Chart.js 사용).
@@ -72,7 +71,7 @@ function collapseToDisplayCategories(contractObj) {
 }
 
 // chartjs-plugin-datalabels: 파이(도넛) 조각 위에 직접 "몇 %"인지 숫자를 써주는 플러그인
-// (fragments/donut.html에서 CDN으로 chartjs-plugin-datalabels를 먼저 불러온 뒤 여기서 등록함)
+// (detail.html에서 CDN으로 chartjs-plugin-datalabels를 먼저 불러온 뒤 여기서 등록함)
 // 이건 우리 카드뿐 아니라 다른 팀원분들 차트에도 필요할 수 있는 범용 플러그인이라 그대로 전역 등록함.
 if (typeof ChartDataLabels !== 'undefined') {
   Chart.register(ChartDataLabels);
