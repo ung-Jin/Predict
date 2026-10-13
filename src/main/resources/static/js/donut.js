@@ -36,10 +36,10 @@
 // [2026-10-08] "아주 조금만" 톤 올림: 각 색 RGB 를 ~10 어둡게(채도↑) 조정. 파스텔 느낌은
 // 유지되면서 가시성이 살짝 올라감.
 const CONTRACT_COLOR_MAP = {
-  '주택용': '#CF828A', // 로즈 (이전 #D98C94)
-  '일반용': '#E59D5B', // 살구 (이전 #EFA765)
-  '산업용': '#75A6BA', // 청 (이전 #7FB0C4)
-  '농사용': '#75B5AA', // 청록 (이전 #7FBFB4)
+  '주택용': '#F1919A', // 로즈 (이전 #D98C94)
+  '일반용': '#FFB36C', // 살구 (이전 #EFA765)
+  '산업용': '#83CBE8', // 청 (이전 #7FB0C4)
+  '농사용': '#89E2D3', // 청록 (이전 #7FBFB4)
   '기타':   '#AFB8C5', // 회청 (이전 #B9C2CF)
 };
 
@@ -156,7 +156,7 @@ function keepCanvasWrapSquare(wrapEl) {
  * @param {string} [titleText] - 도넛 정중앙에 표시할 캡션 (지역명 또는 "전국 평균").
  *                                centerTextPlugin이 캔버스에 직접 그려 넣음.
  * @param {string} [centerColor] - 중앙 캡션 글자색. 지도 테두리/순위표 배지 색과 맞춰서
- *                                 왼쪽=파랑(#6F9BD6), 오른쪽=살구(#F2A97E), 전국평균=초록(#6FBF9F) 사용.
+ *                                 왼쪽=파랑(#AFC8E9), 오른쪽=살구(#F2A97E), 전국평균=초록(#B1E2CE) 사용.
  */
 function renderContractDonut(containerId, contractObj, titleText, centerColor = '#333333') {
   const canvas = document.getElementById(containerId);

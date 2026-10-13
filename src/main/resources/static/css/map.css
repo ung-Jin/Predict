@@ -138,7 +138,7 @@
      맞춰 옅은 파랑(#DCE7F5)으로 바꿈 - 실제 0% 폴리곤 색도 더 이상 흰색이 아님.
      [2026-10-07] 진파랑->핫핑크 램프를 시안 톤으로 교정.
      [2026-10-07] 파스텔 톤 더 연하게: 양 끝을 시안 ramp 양 끝과 맞춤. */
-  background: linear-gradient(to right, #6E99D2, #F5F7FB, #F5F7FB, #E68B5F);
+  background: linear-gradient(to right, #90B2DF, #F5F7FB, #F5F7FB, #ECAA89);
 }
 
 .diverging-labels {

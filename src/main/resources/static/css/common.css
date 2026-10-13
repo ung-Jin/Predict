@@ -1,7 +1,7 @@
 /* 프리텐다드 (https://noonnu.cc/font_page/694). @import는 다른 규칙보다 반드시 위에 있어야 적용됨 */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css');
 
-:root{--ink:#2A3654;--mute:#66789A;--bg:#F5F9FE;--line:#E6EEF8;--a:#6F9BD6;--b:#F2A97E;--ref:#6FBF9F}
+:root{--ink:#2A3654;--mute:#66789A;--bg:#F5F9FE;--line:#E6EEF8;--a:#AFC8E9;--b:#F2A97E;--ref:#B1E2CE}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Noto Sans KR',sans-serif}
 /* [2026-10-08] 세로 스크롤 삭제: 뷰포트 100vh 안에서 모든 섹션이 수용되도록 전환.
    .app 가 뷰포트 전체 세로를 고정하고, .content 가 헤더(64px) 를 뺀 나머지를 flex:1

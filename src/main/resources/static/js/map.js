@@ -74,11 +74,11 @@ function divergingHex(value, scaleMinDecrease, scaleMaxIncrease) {
   if (value < 0) {
     // 감소 쪽: 밝은 회색(0%에 가까움) -> 파란색(감소폭 최대)
     const t = scaleMinDecrease !== 0 ? clamp01(value / scaleMinDecrease) : 0;
-    return lerpHex(0xEEF1F6, 0x6E99D2, t);
+    return lerpHex(0xEEF1F6, 0x90B2DF, t);
   }
   // 증가 쪽: 밝은 회색(0%에 가까움) -> 살구색(증가폭 최대)
   const t = scaleMaxIncrease !== 0 ? clamp01(value / scaleMaxIncrease) : 0;
-  return lerpHex(0xEEF1F6, 0xE68B5F, t);
+  return lerpHex(0xEEF1F6, 0xECAA89, t);
 }
 
 /**

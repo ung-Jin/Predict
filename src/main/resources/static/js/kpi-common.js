@@ -34,24 +34,25 @@ var KPI_COLOR_B_LIGHT = 'rgba(242, 169, 126, 0.18)';
 var KPI_COLOR_AVG_LIGHT = 'rgba(111, 191, 159, 0.18)';
 
 /* 몇 번째 줄인지로 색을 고른다.
-   첫 줄은 항상 파랑, 둘째 줄은 "시도 평균"이면 초록, 실제 지역이면 주황. */
+   [2026-10-13] "전국"과 "시도 평균"은 항상 초록(전국 관련은 초록 계열).
+   그 외에는 첫 줄이 파랑, 둘째 줄이 주황. (예전엔 0선택의 "전국"이 첫 줄이라 파랑이었다) */
 function kpiSeriesColor(index, name){
+  if(name === '시도 평균' || name === '전국'){
+    return KPI_COLOR_AVG;
+  }
   if(index === 0){
     return KPI_COLOR_A;
-  }
-  if(name === '시도 평균'){
-    return KPI_COLOR_AVG;
   }
   return KPI_COLOR_B;
 }
 
 /* 위와 같은 규칙으로 옅은 색을 고른다 */
 function kpiSeriesLightColor(index, name){
+  if(name === '시도 평균' || name === '전국'){
+    return KPI_COLOR_AVG_LIGHT;
+  }
   if(index === 0){
     return KPI_COLOR_A_LIGHT;
-  }
-  if(name === '시도 평균'){
-    return KPI_COLOR_AVG_LIGHT;
   }
   return KPI_COLOR_B_LIGHT;
 }
