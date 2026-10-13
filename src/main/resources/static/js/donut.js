@@ -116,7 +116,8 @@ const centerTextPlugin = {
       ctx.font = `bold ${fontSize}px sans-serif`;
     }
 
-    ctx.fillText(text, cx, cy);
+    // 한글 글자 모양은 'middle' 기준 박스 안에서 약 1px 위로 치우쳐 보여서(실측 1.1px) 1px 내림
+    ctx.fillText(text, cx, cy + 1);
     ctx.restore();
   },
 };
@@ -158,6 +159,57 @@ function keepCanvasWrapSquare(wrapEl) {
  * @param {string} [centerColor] - 중앙 캡션 글자색. 지도 테두리/순위표 배지 색과 맞춰서
  *                                 왼쪽=파랑(#AFC8E9), 오른쪽=살구(#F2A97E), 전국평균=초록(#B1E2CE) 사용.
  */
+// [2026-10-13] 조각 색을 어둡게 만든 색(호버 캡슐 배경).
+// RGB 에 0.72 를 곱하면 채도가 같이 죽어 칙칙해 보여서, HSL 로 바꿔 색상은 그대로 두고 명도(L)를 낮추며, 채도는 살짝만 낮춘다.
+function darkenHex(hex, factor = 0.68, satFactor = 0.8) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = (d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))) * satFactor;   // 채도도 살짝 낮춰 형광처럼 튀지 않게
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+  }
+  const L = l * factor;
+  const c = (1 - Math.abs(2 * L - 1)) * s;
+  const x = c * (1 - Math.abs((h % 2) - 1));
+  const m = L - c / 2;
+  const [r1, g1, b1] = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x] : h < 4 ? [0, x, c] : h < 5 ? [x, 0, c] : [c, 0, x];
+  return `rgb(${Math.round((r1 + m) * 255)}, ${Math.round((g1 + m) * 255)}, ${Math.round((b1 + m) * 255)})`;
+}
+
+// [2026-10-13] 도넛 HTML 말풍선. 조각 색을 어둡게 한 캡슐에 "이름 / 소수점 한 자리 %" 두 줄을 담아,
+// 마우스를 올린 조각의 중심(원래 % 숫자가 있는 자리)에 캔버스 위로 얹는다(.donut-tip).
+// HTML 이라 캔버스보다 위층이고 배경이 불투명해서, 그 자리의 원래 숫자를 덮는다 -> 숫자가 두 번 보이지 않는다.
+function showDonutTip({ chart, tooltip }) {
+  const wrap = chart.canvas.parentNode;
+  let el = wrap.querySelector('.donut-tip');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'donut-tip';
+    wrap.appendChild(el);
+  }
+  if (tooltip.opacity === 0 || !tooltip.dataPoints || !tooltip.dataPoints.length) {
+    el.style.opacity = 0;
+    return;
+  }
+  const p = tooltip.dataPoints[0];
+  el.textContent = `${p.label}\n${p.parsed.toFixed(1)}%`;
+  el.style.background = darkenHex(chart.data.datasets[0].backgroundColor[p.dataIndex]);
+  el.style.opacity = 1;
+  // 마우스 위치가 아니라 조각 중심에, 그것도 "튀어나온 뒤의 최종 자리"(hoverOffset 6px)로 고정한다.
+  // tooltipPosition() 을 쓰면 조각이 튀어나오는 애니메이션(약 0.4초) 동안 캡슐이 같이 밀려 움직인다.
+  const arc = chart.getDatasetMeta(0).data[p.dataIndex];
+  const mid = (arc.startAngle + arc.endAngle) / 2;
+  const rad = (arc.innerRadius + arc.outerRadius) / 2 + chart.data.datasets[0].hoverOffset;
+  el.style.left = `${arc.x + Math.cos(mid) * rad}px`;
+  el.style.top = `${arc.y + Math.sin(mid) * rad}px`;
+}
+
 function renderContractDonut(containerId, contractObj, titleText, centerColor = '#333333') {
   const canvas = document.getElementById(containerId);
   if (!canvas) {
@@ -188,6 +240,7 @@ function renderContractDonut(containerId, contractObj, titleText, centerColor = 
           data: values,
           backgroundColor: colors,
           borderWidth: 1,
+          hoverOffset: 6,   // 마우스를 올린 조각이 6px 바깥으로 튀어나옴 (아래 layout.padding 이 잘림 방지 여백)
         },
       ],
     },
@@ -199,7 +252,8 @@ function renderContractDonut(containerId, contractObj, titleText, centerColor = 
       // Chart.js가 차트 주변에 기본으로 넣는 여백을 0으로 없앰 (도넛을 캔버스 박스
       // 끝까지 최대한 채우기 위함 - map.css에서 캔버스 박스 자체를 정사각형으로
       // 고정해뒀으므로, 이 안에서 또 여백이 생기지 않게 함).
-      layout: { padding: 0 },
+      // [2026-10-13] 0 -> 6. 호버 때 조각이 튀어나와도 캔버스 밖으로 잘리지 않게 여백을 둠.
+      layout: { padding: 6 },
       // cutout: 안쪽 구멍 크기. 너무 좁으면 중앙 텍스트가 들어갈 자리가 없고,
       // 너무 넓으면 링이 얇아져서 % 라벨이 안 들어감 - 42%가 적당한 절충점.
       cutout: '42%',
@@ -209,12 +263,9 @@ function renderContractDonut(containerId, contractObj, titleText, centerColor = 
       plugins: {
         title: { display: false },   // 캡션은 donutCenterText 플러그인으로 대체
         legend: { display: false },  // 범례는 공통 범례(#donutLegend) 하나만
-        tooltip: {
-          callbacks: {
-            // 툴팁에서는 원본 소수점까지 그대로 보여줌 (예: "산업용: 35.15%")
-            label: (ctx) => `${ctx.label}: ${ctx.parsed}%`,
-          },
-        },
+        // [2026-10-13] 기본 말풍선 대신 직접 만든 HTML 말풍선(external)을 쓴다. 캔버스 글자(조각 위 %,
+        // 가운데 지역명)와 같은 층이 아니라서 z-index 로 항상 맨 위에 뜨고 서로 겹쳐 지저분해지지 않는다.
+        tooltip: { enabled: false, position: 'nearest', external: showDonutTip },
         // 파이 조각 위 % 라벨 (정수로 반올림, 링 중앙에 배치)
         datalabels: {
           color: '#fff',

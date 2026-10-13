@@ -46,7 +46,9 @@ function drawDetailDonutRegion(canvasId, sidoName, color, monthData) {
     clearDonut(canvasId);
     return;
   }
-  renderContractDonut(canvasId, rec.contract, sidoName, color);
+  // 가운데 글자는 짧은 이름(부산광역시 -> 부산). 표에 없으면 원래 이름 그대로
+  const shortName = SIDO_CODE_TO_SHORT[SIDO_NAME_TO_CODE[sidoName]] || sidoName;
+  renderContractDonut(canvasId, rec.contract, shortName, color);
 }
 
 // 선택 상태에 맞춰 왼쪽/오른쪽 도넛을 다시 그린다
