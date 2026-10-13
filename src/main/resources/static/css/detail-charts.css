@@ -13,6 +13,16 @@
  * 묶으면서 히트맵이 예전만큼 높이가 필요 없어져, 줄어든 만큼 막대/계절 차트가 조금 커진다. */
 .detail-chart-card{display:flex;flex-direction:column;gap:10px;flex:0.9 1 0;min-height:0}
 .detail-chart-heat{flex:1.2 1 0}
+
+/* [2026-10-12] 맨 위 한 줄 = 막대 카드 + 도넛 카드 (가로로 나란히).
+ * 이 줄이 예전 막대 카드 한 장의 자리(세로 비율 0.9)를 그대로 차지하므로 우측 열 전체 높이는 변하지 않는다.
+ * 줄 안에서는 세로가 아니라 "가로" 폭을 나눠 가진다.
+ * flex-basis 를 0 이 아니라 34px 로 둔 이유: 다른 카드(.card)는 패딩 32 + 테두리 2 = 34px 가 flex 계산에
+ * 따로 더해지는데(content-box), 이 줄 래퍼에는 패딩/테두리가 없어서 그대로 두면 이 줄만 34px 낮게 계산된다. */
+.detail-top-row{display:flex;gap:12px;flex:0.9 1 34px;min-height:0}
+.detail-top-row > .detail-chart-card{flex:1 1 0;min-width:0}
+.detail-top-row > .detail-bar-card{flex:0.85 1 0}
+.detail-top-row > .detail-donut-card{flex:1.15 1 0}
 .detail-chart-title{font-size:15px;font-weight:700;color:#2A3654}
 .detail-chart-sub{font-size:13px;font-weight:400;color:#66789A;margin-left:8px}
 /* Chart.js는 부모 높이가 정해져 있어야 그려짐. 카드 안에서 제목을 뺀 나머지 세로 공간 차지. */
@@ -31,3 +41,18 @@
  * 네모가 폭에 맞춰 작아지고 세로 틈만 ~8px 로 벌어졌다. 비율로 묶으면 블록 수와 상관없이
  * 가로/세로 칸 크기가 비슷해져 네모가 서로 붙는다 (겹침은 detail-charts.js 의 cellRadius 가 방지). */
 .detail-heat-box{position:relative;width:100%;aspect-ratio:2.1}
+
+/* ===== 계약종별 도넛 카드 (대시보드 map.css 의 도넛 규칙을 이 카드에 맞게 옮김) =====
+ * 도넛은 정사각형(donut.js 가 높이=폭으로 맞춤)이라 카드 높이를 넘으면 잘린다.
+ * 그래서 본문(.detail-donut-body)을 container 로 잡고, cqh(컨테이너 높이 단위)로
+ * 도넛 최대 폭을 "본문 높이"에 맞춘다 -> 화면 높이가 달라져도 알아서 맞는다. */
+.detail-donut-body{display:flex;align-items:center;justify-content:center;gap:6px;container-type:size}
+.detail-donut-body .donut-compact{flex:1 1 0;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;
+  max-width:min(calc((100% - 78px) / 2), 100cqh)}   /* 도넛 2개 + 범례(66px) + 간격(12px) */
+.detail-donut-body .donut-compact.is-empty{display:none}
+/* 도넛이 1개만 보일 때(0개 선택): 범례 옆 남는 폭을 쓰되 높이를 넘지 않게 */
+.detail-donut-body:has(.donut-compact.is-empty) .donut-compact:not(.is-empty){max-width:min(calc(100% - 78px), 100cqh)}
+.donut-canvas-wrap{position:relative;width:100%;max-width:100%}
+.donut-legend{flex:0 0 auto;width:74px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;font-size:12px;color:#66789A;line-height:1.2}
+.donut-legend-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.donut-legend-swatch{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}

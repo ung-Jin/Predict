@@ -1,0 +1,48 @@
+/* [1번 소유] 지역 특성 비교 레이더 카드 (대시보드 가운데 줄, 예전 도넛 자리) */
+
+/* 크기는 예전 도넛 카드와 똑같이 둔다:
+   폭 38% 로 고정, 높이는 옆 카드(순위/3개월 예측)와 같은 --mid-card-height (dashboard.css).
+   그래야 세 카드의 위/아래 선이 맞고, 지역을 고르고 뺄 때 화면이 들썩이지 않는다. */
+.radar {
+  flex: 0 0 38%;
+  max-width: 38%;
+  min-width: 0;             /* 이게 없으면 안쪽 캔버스가 카드를 밀어내 폭이 틀어진다 */
+  box-sizing: border-box;
+  height: var(--mid-card-height);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 카드 머리말 : 제목 옆에 "정규화 0~100 · 2026년 7월 기준" (순위 카드 머리말과 같은 모양) */
+.radar-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.radar-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.radar-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+/* 차트 영역: 머리말을 뺀 나머지 세로 공간 전부.
+   min-height:0 은 flex 아이템이 내용보다 작아질 수 있게 하는 데 필요하다. */
+.radar-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.radar-body canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

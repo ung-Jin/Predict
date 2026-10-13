@@ -1,0 +1,26 @@
+<!-- [1번 소유] 지역 특성 비교 레이더 차트.
+     대시보드 왼쪽 컬럼의 가운데 줄(.row)에서 예전에 계약종별 도넛이 있던 자리.
+     (도넛은 상세 데이터 페이지로 옮겼다)
+
+     5개 축을 0~100 으로 정규화해서 그린다 (정규화 방식은 radar.js 위쪽 주석 참고).
+       0개 선택 : 전국
+       1개 선택 : 전국 vs A 지역
+       2개 선택 : A 지역 vs B 지역
+
+     Chart.js 는 dashboard.html <head> 에서 이미 로드됨. 그리는 코드는 /js/radar.js -->
+<div th:fragment="radar" class="card radar">
+
+  <div class="radar-head">
+    <p class="radar-title">지역 특성 비교</p>
+    <p class="radar-sub" id="radarSub">정규화 0~100</p>
+  </div>
+
+  <!-- 차트 영역. 높이는 radar.css 가 정한다 (Chart.js 는 부모 높이가 정해져 있어야 그려짐) -->
+  <div class="radar-body">
+    <canvas id="radarChart"></canvas>
+  </div>
+
+  <!-- script 는 반드시 이 fragment div "안쪽"에 둬야 최종 페이지에 실린다 (kpi.html, forecast3.html 과 같은 관례) -->
+  <script th:src="@{/js/radar.js}"></script>
+
+</div>
