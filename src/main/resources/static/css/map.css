@@ -211,7 +211,7 @@
 .compare-mid-header {
   color: #A3B1C6;
   font-weight: normal;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .compare-col-cell,
@@ -237,7 +237,7 @@
 }
 
 .compare-mid-cell {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--mute);
 }
 
@@ -275,7 +275,7 @@
    의도보다 훨씬 크게 보였다. 이름을 분리해서 서로 영향받지 않게 함
    (compare-rank.js 가 생성하는 마크업도 같이 바꿈). */
 .compare-value {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--mute);
   margin-top: 2px;
 }

@@ -176,13 +176,13 @@ function drawRadar() {
           ticks: { display: false, stepSize: 25 },    // 눈금 글자는 숨기고 거미줄 선만 (25점 간격)
           grid: { color: '#E6EEF8' },
           angleLines: { color: '#E6EEF8' },
-          pointLabels: { color: '#66789A', font: { size: 11 } },
+          pointLabels: { color: '#66789A', font: { size: 12 } },
         },
       },
       plugins: {
         legend: {
           position: 'right',
-          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 10, font: { size: 12 } },
+          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 10, font: { size: 13 } },
         },
         tooltip: {
           callbacks: {
