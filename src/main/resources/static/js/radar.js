@@ -47,7 +47,6 @@ let radarChart = null;       // 한 번 만들어 두고 선택이 바뀔 때 �
 let radarMonthData = [];     // 가장 최근 달의 17개 시도 기록
 let radarScale = null;       // 축마다 {min, max} (총사용량 축은 로그 값 기준)
 let radarNational = null;    // '전국' 기준 원본 값 5개
-let radarRefText = '';       // "2026년 7월 기준"
 
 
 // 한 시도의 원본 값 5개 (축 순서와 같다)
@@ -203,7 +202,6 @@ async function startRadar() {
     const year = json.meta.latestYear;
     const month = json.meta.latestMonth;
     radarMonthData = json.records.filter((r) => r.year === year && r.month === month);
-    radarRefText = year + '년 ' + month + '월 기준';
   } catch (error) {
     console.error('[radar] 지역 데이터(region_data.json) 조회 오류', error);
     return;   // 데이터를 못 받았으면 그리지 않는다
@@ -211,7 +209,6 @@ async function startRadar() {
 
   radarScale = radarBuildScale(radarMonthData);
   radarNational = radarBuildNational(radarMonthData);
-  document.getElementById('radarSub').textContent = '정규화 0~100 · ' + radarRefText;
   drawRadar();
 }
 

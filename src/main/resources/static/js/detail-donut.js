@@ -92,8 +92,6 @@ async function startDetailDonut() {
     return;   // 데이터를 못 받았으면 그리지 않는다
   }
 
-  document.getElementById('detailDonutRef').textContent =
-    detailDonutYear + '년 ' + detailDonutMonth + '월 기준';
   renderContractLegend('donutLegend');
   drawDetailDonuts();
 }
