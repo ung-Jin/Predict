@@ -46,12 +46,13 @@
  * 도넛은 정사각형(donut.js 가 높이=폭으로 맞춤)이라 카드 높이를 넘으면 잘린다.
  * 그래서 본문(.detail-donut-body)을 container 로 잡고, cqh(컨테이너 높이 단위)로
  * 도넛 최대 폭을 "본문 높이"에 맞춘다 -> 화면 높이가 달라져도 알아서 맞는다. */
-.detail-donut-body{display:flex;align-items:center;justify-content:center;gap:6px;container-type:size}
+.detail-donut-body{display:flex;align-items:center;justify-content:center;gap:14px;container-type:size}
 .detail-donut-body .donut-compact{flex:1 1 0;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;
-  max-width:min(calc((100% - 78px) / 2), 100cqh)}   /* 도넛 2개 + 범례(66px) + 간격(12px) */
+  max-width:min(calc((100% - 102px) / 2), 100cqh)}   /* 도넛 2개 + 범례(74px) + 간격(14px x 2) */
 .detail-donut-body .donut-compact.is-empty{display:none}
 /* 도넛이 1개만 보일 때(0개 선택): 범례 옆 남는 폭을 쓰되 높이를 넘지 않게 */
-.detail-donut-body:has(.donut-compact.is-empty) .donut-compact:not(.is-empty){max-width:min(calc(100% - 78px), 100cqh)}
+.detail-donut-body:has(.donut-compact.is-empty){gap:20px}   /* 0개 선택(도넛 1개)은 간격 20px, 1~2개 선택은 위의 14px */
+.detail-donut-body:has(.donut-compact.is-empty) .donut-compact:not(.is-empty){max-width:min(calc(100% - 94px), 100cqh)}   /* 범례 74 + 간격 20 */
 .donut-canvas-wrap{position:relative;width:100%;max-width:100%}
 .donut-legend{flex:0 0 auto;width:74px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;font-size:12px;color:#66789A;line-height:1.2}
 .donut-legend-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}

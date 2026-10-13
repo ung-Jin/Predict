@@ -68,7 +68,7 @@
 .df-left { flex: 1; }
 
 .df-label {
-    font-size: 12px;
+    font-size: 14px;
     color: var(--mute);
     font-weight: 500;
     padding: 0 2px;
@@ -80,7 +80,7 @@
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 15px;
     color: var(--ink);
     cursor: default;
     display: inline-flex; align-items: center; gap: 6px;
