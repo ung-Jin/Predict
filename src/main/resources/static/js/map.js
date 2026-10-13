@@ -115,8 +115,8 @@ function initRegionMap(containerId, options) {
   // 설정을 보므로, 그것도 같은 값으로 맞춰야 "처음 화면 == 홈 버튼 누른 화면"이 된다.
   // HOME_ZOOM_LEVEL 은 세종시 원 마커 반지름 계산(sejongRadiusForZoom)의 기준값이기도 해서
   // 지우면 안 되고, fit 이후의 실제 줌으로 갱신해 줘야 마커 크기가 어긋나지 않는다.
-  const HOME_ZOOM_LEVEL = 1.3;
-  const HOME_GEO_POINT = { longitude: 127.55, latitude: 36.40 };
+  const HOME_ZOOM_LEVEL = 1.2;
+  const HOME_GEO_POINT = { longitude: 127.9, latitude: 35.65 };
 
   // 처음에 담아 보여줄 지리 범위. geodata 를 직접 계산해서 뽑은 값이다.
   //
@@ -404,6 +404,7 @@ function initRegionMap(containerId, options) {
 
     polygonSeries.events.on('datavalidated', () => {
       if (userMovedMap) return;
+      applyHomeView(); // [2026-10-13] 데이터가 들어오는 즉시 홈 구도로. 아래 디바운스는 뒤따르는 자동 fit 대비용
 
       // 디바운스로 "데이터가 다 들어온 뒤 한 번만" 처리한다.
       // 데이터가 비동기로 여러 번 들어오는데, 그때마다 amCharts 가 자동 fit 하므로
@@ -417,11 +418,10 @@ function initRegionMap(containerId, options) {
           fillRegionLabels();
           labelsFilled = true;
         }
-        // [2026-10-07] 여기서 applyHomeView() 를 부르지 않는다.
-        // 지도는 1초쯤에 amCharts 자동 fit 으로 먼저 그려지는데, 그 뒤에 줌을 바꾸면
-        // 화면이 툭 순간이동한다. 처음 그려진 게 곧 최종 화면이 되도록 그냥 둔다.
-        // (홈 버튼은 chart 의 homeGeoPoint/homeZoomLevel 로 따로 동작하므로,
-        //  누르면 아래 상수로 맞춰둔 구도로 간다)
+        // [2026-10-13] 처음 화면도 홈 버튼과 같은 구도(HOME_ZOOM_LEVEL/HOME_GEO_POINT)로 맞춘다.
+        // 위 datavalidated 맨 앞에서 이미 즉시 맞췄다(움직임·지연 없음, 실측: 32ms에 적용).
+        // 여기는 뒤따르는 자동 fit 이 덮어쓸 때를 대비한 안전장치로, 같은 값이면 화면은 안 움직인다.
+        applyHomeView();
       }, 400);
     });
 
